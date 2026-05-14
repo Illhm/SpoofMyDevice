@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import com.devicespooflab.hooks.utils.RandomGenerator;
 
 /**
  * Manages configuration for spoofed values.
@@ -109,6 +110,49 @@ public class ConfigManager {
 
     public static synchronized void forceReload(Context context) {
         reload(true, context);
+    }
+
+    public static synchronized void randomizeAll(Context context) {
+        Map<String, String> generatedProperties = RandomGenerator.generateBatchRandomization();
+        updateConfig(context, generatedProperties);
+    }
+
+    public static synchronized void updateConfig(Context context, Map<String, String> updates) {
+        ensureFreshConfig();
+
+        Map<String, String> merged = new LinkedHashMap<>();
+        if (allProperties != null) {
+            merged.putAll(allProperties);
+        }
+
+        if (updates != null) {
+            for (Map.Entry<String, String> entry : updates.entrySet()) {
+                if (entry.getValue() != null) {
+                    merged.put(entry.getKey(), entry.getValue());
+                } else {
+                    merged.remove(entry.getKey());
+                }
+            }
+        }
+
+        try {
+            java.io.File configFile = new java.io.File(context.getFilesDir(), "device_profile.conf");
+            StringBuilder builder = new StringBuilder();
+
+            for (Map.Entry<String, String> entry : merged.entrySet()) {
+                builder.append(entry.getKey()).append("=").append(entry.getValue()).append("\n");
+            }
+
+            try (java.io.FileOutputStream outputStream = new java.io.FileOutputStream(configFile, false)) {
+                outputStream.write(builder.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+
+            configFile.setReadable(true, false);
+
+            forceReload(context);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static synchronized boolean isUsingEmbeddedDefaults() {
