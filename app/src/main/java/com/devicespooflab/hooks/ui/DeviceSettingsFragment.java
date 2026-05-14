@@ -203,6 +203,7 @@ public class DeviceSettingsFragment extends Fragment {
             }
         });
 
+        binding.buttonAdvancedRandomAll.setOnClickListener(v -> randomAdvancedFields());
         binding.buttonAdvancedClearAll.setOnClickListener(v -> clearAdvancedFields());
 
         binding.layoutAdvancedImei.setEndIconOnClickListener(v ->
@@ -371,6 +372,18 @@ public class DeviceSettingsFragment extends Fragment {
             }
         }
         return extraProperties;
+    }
+
+    private void randomAdvancedFields() {
+        setText(binding.inputAdvancedImei, RandomGenerator.generateIMEI());
+        setText(binding.inputAdvancedMeid, RandomGenerator.generateMEID());
+        setText(binding.inputAdvancedImsi, RandomGenerator.generateIMSI());
+        setText(binding.inputAdvancedIccid, RandomGenerator.generateICCID());
+        setText(binding.inputAdvancedPhoneNumber, RandomGenerator.generatePhoneNumber());
+        setText(binding.inputAdvancedGaid, RandomGenerator.generateGAID());
+        setText(binding.inputAdvancedGsfId, RandomGenerator.generateGSFId());
+        setText(binding.inputAdvancedMediaDrmId, toHex(RandomGenerator.generateMediaDrmId()));
+        setText(binding.inputAdvancedAppSetId, RandomGenerator.generateGAID());
     }
 
     private void clearAdvancedFields() {
