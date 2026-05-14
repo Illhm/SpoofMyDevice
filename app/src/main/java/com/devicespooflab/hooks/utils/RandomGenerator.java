@@ -90,6 +90,24 @@ public class RandomGenerator {
         return UUID.randomUUID().toString();
     }
 
+    public static String generateMacAddress() {
+        StringBuilder mac = new StringBuilder();
+        String hexChars = "0123456789ABCDEF";
+        for (int i = 0; i < 6; i++) {
+            if (i == 0) {
+                // first byte must be locally administered and unicast (e.g. 02, 06, 0A, 0E)
+                mac.append("02");
+            } else {
+                mac.append(hexChars.charAt(random.nextInt(16)));
+                mac.append(hexChars.charAt(random.nextInt(16)));
+            }
+            if (i < 5) {
+                mac.append(":");
+            }
+        }
+        return mac.toString();
+    }
+
     public static byte[] generateMediaDrmId() {
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
@@ -321,6 +339,9 @@ public class RandomGenerator {
         properties.put("ANDROID_ID", generateAndroidId());
         properties.put("ro.serialno", generateSerial());
         properties.put("ro.boot.serialno", generateSerial());
+        properties.put("device.mac_address", generateMacAddress());
+        properties.put("device.wifi_mac_address", generateMacAddress());
+        properties.put("device.bluetooth_mac_address", generateMacAddress());
 
         // Device Profile Properties
         properties.put("ro.product.brand", preset.brand);

@@ -51,6 +51,9 @@ public class ConfigManager {
     public static final String KEY_SPOOF_GSF_ID = "device.gsf_id";
     public static final String KEY_SPOOF_MEDIA_DRM_ID = "device.media_drm_id";
     public static final String KEY_SPOOF_APP_SET_ID = "device.app_set_id";
+    public static final String KEY_SPOOF_MAC_ADDRESS = "device.mac_address";
+    public static final String KEY_SPOOF_WIFI_MAC_ADDRESS = "device.wifi_mac_address";
+    public static final String KEY_SPOOF_BLUETOOTH_MAC_ADDRESS = "device.bluetooth_mac_address";
     public static final String KEY_SAFE_MODE_PACKAGES = "safe_mode.packages";
     public static final String KEY_SPOOF_TOGGLE_PREFIX = "spoof.enabled.";
 
@@ -84,6 +87,9 @@ public class ConfigManager {
     public static final String FIELD_GSF_ID = "gsf_id";
     public static final String FIELD_MEDIA_DRM_ID = "media_drm_id";
     public static final String FIELD_APP_SET_ID = "app_set_id";
+    public static final String FIELD_MAC_ADDRESS = "mac_address";
+    public static final String FIELD_WIFI_MAC_ADDRESS = "wifi_mac_address";
+    public static final String FIELD_BLUETOOTH_MAC_ADDRESS = "bluetooth_mac_address";
 
     private static final String[] CONFIG_PATHS = {
         "/data/local/tmp/spoofmydevice_device_profile.conf",
@@ -1000,6 +1006,27 @@ public class ConfigManager {
             return null;
         }
         return getOptionalConfigValue(KEY_SPOOF_APP_SET_ID);
+    }
+
+    public static String getMacAddress() {
+        if (!isSpoofEnabled(FIELD_MAC_ADDRESS)) {
+            return null;
+        }
+        return getOptionalConfigValue(KEY_SPOOF_MAC_ADDRESS);
+    }
+
+    public static String getWifiMacAddress() {
+        if (!isSpoofEnabled(FIELD_WIFI_MAC_ADDRESS)) {
+            return null;
+        }
+        return getOptionalConfigValue(KEY_SPOOF_WIFI_MAC_ADDRESS);
+    }
+
+    public static String getBluetoothMacAddress() {
+        if (!isSpoofEnabled(FIELD_BLUETOOTH_MAC_ADDRESS)) {
+            return null;
+        }
+        return getOptionalConfigValue(KEY_SPOOF_BLUETOOTH_MAC_ADDRESS);
     }
 
     public static boolean isConfigAvailable() {
