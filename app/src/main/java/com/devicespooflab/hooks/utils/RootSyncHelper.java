@@ -27,6 +27,11 @@ public class RootSyncHelper {
         // Include the necessary boolean spoof flags
         propContent.append("spoofBuild=true\n");
         propContent.append("spoofProps=true\n");
+        propContent.append("spoofProvider=true\n");
+        propContent.append("spoofSignature=true\n");
+        propContent.append("spoofVendingBuild=true\n");
+        propContent.append("spoofVendingSdk=false\n");
+        propContent.append("DEBUG=false\n");
 
         Process process = null;
         DataOutputStream os = null;
