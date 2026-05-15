@@ -80,9 +80,7 @@ public class RealInfoFragment extends Fragment {
 
         binding.savedProfileText.setText(String.format(
             Locale.US,
-            "Preset: %s\nMode: %s\nTarget model: %s\nTarget device: %s\nTarget fingerprint: %s\nTarget resolution: %dx%d / %ddpi",
-            activity.getPresetLabel(config.getSelectedPresetId()),
-            config.isCustomMode() ? "Custom" : "Preset",
+            "Target model: %s\nTarget device: %s\nTarget fingerprint: %s\nTarget resolution: %dx%d / %ddpi",
             profile.getDisplayName(),
             profile.getDeviceCode(),
             profile.getBuildFingerprint(),

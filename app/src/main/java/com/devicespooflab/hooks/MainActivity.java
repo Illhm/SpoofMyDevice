@@ -20,8 +20,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.devicespooflab.hooks.data.AppSettingsStore;
 import com.devicespooflab.hooks.data.ConfigFileManager;
-import com.devicespooflab.hooks.data.DevicePreset;
-import com.devicespooflab.hooks.data.DevicePresetCatalog;
 import com.devicespooflab.hooks.databinding.ActivityMainBinding;
 import com.devicespooflab.hooks.ui.AppSettingsFragment;
 import com.devicespooflab.hooks.ui.DeviceSettingsFragment;
@@ -48,8 +46,6 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private ConfigFileManager configFileManager;
-    private DevicePresetCatalog presetCatalog;
-    private List<DevicePreset> presets;
     private ConfigFileManager.LoadedConfig loadedConfig;
 
     private HomeFragment homeFragment;
@@ -71,34 +67,15 @@ public class MainActivity extends AppCompatActivity {
         configureNavigationAppearance();
 
         configFileManager = new ConfigFileManager();
-        presetCatalog = new DevicePresetCatalog();
-        presets = presetCatalog.load(this);
         loadedConfig = loadInitialConfig();
 
         setupFragments(savedInstanceState);
         setupBottomNavigation(savedInstanceState);
         binding.saveFab.setOnClickListener(view -> saveFromEditor());
-        refreshRemotePresets(false);
-    }
-
-    public List<DevicePreset> getPresets() {
-        return presets;
     }
 
     public ConfigFileManager.LoadedConfig getLoadedConfigState() {
         return loadedConfig;
-    }
-
-    public String getPresetLabel(String presetId) {
-        if (presetId == null) {
-            return getString(R.string.preset_unknown);
-        }
-        for (DevicePreset preset : presets) {
-            if (presetId.equals(preset.getId())) {
-                return preset.getDisplayName();
-            }
-        }
-        return getString(R.string.preset_unknown);
     }
 
     public boolean isModuleActivated() {
@@ -134,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ConfigFileManager.LoadedConfig loadInitialConfig() {
         try {
-            return configFileManager.ensureLoaded(this, presets);
+            return configFileManager.ensureLoaded(this);
         } catch (Exception exception) {
             Toast.makeText(this, exception.getMessage(), Toast.LENGTH_LONG).show();
             throw new IllegalStateException("Unable to initialize configuration", exception);
@@ -245,9 +222,7 @@ public class MainActivity extends AppCompatActivity {
             loadedConfig = configFileManager.save(
                 this,
                 draft.profile,
-                draft.extraProperties,
-                draft.selectedPresetId,
-                draft.customMode
+                draft.extraProperties
             );
             settingsFragment.refreshFromHost(true);
             homeFragment.refresh();
@@ -264,21 +239,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void openRealInfo() {
         startActivity(new Intent(this, RealInfoActivity.class));
-    }
-
-    public String getPresetSourceUrl() {
-        return AppSettingsStore.getPresetSourceUrl(this);
-    }
-
-    public boolean updatePresetSourceUrl(String value) {
-        try {
-            AppSettingsStore.setPresetSourceUrl(this, value);
-            refreshRemotePresets(true);
-            return true;
-        } catch (Exception exception) {
-            Snackbar.make(binding.getRoot(), getString(R.string.settings_preset_source_failed) + " " + exception.getMessage(), Snackbar.LENGTH_LONG).show();
-            return false;
-        }
     }
 
     public Set<String> getSafeModePackages() {
@@ -311,9 +271,7 @@ public class MainActivity extends AppCompatActivity {
             loadedConfig = configFileManager.save(
                 this,
                 loadedConfig.getProfile(),
-                extraProperties,
-                loadedConfig.getSelectedPresetId(),
-                loadedConfig.isCustomMode()
+                extraProperties
             );
             settingsFragment.refreshFromHost(true);
             appSettingsFragment.refreshFromHost();
@@ -339,9 +297,7 @@ public class MainActivity extends AppCompatActivity {
         ConfigFileManager.LoadedConfig optimisticConfig = new ConfigFileManager.LoadedConfig(
             previousConfig.getConfigFile(),
             previousConfig.getProfile(),
-            extraProperties,
-            previousConfig.getSelectedPresetId(),
-            previousConfig.isCustomMode()
+            extraProperties
         );
         loadedConfig = optimisticConfig;
         if (appSettingsFragment != null) {
@@ -353,9 +309,7 @@ public class MainActivity extends AppCompatActivity {
                 ConfigFileManager.LoadedConfig savedConfig = configFileManager.save(
                     this,
                     optimisticConfig.getProfile(),
-                    extraProperties,
-                    optimisticConfig.getSelectedPresetId(),
-                    optimisticConfig.isCustomMode()
+                    extraProperties
                 );
                 runOnUiThread(() -> loadedConfig = savedConfig);
             } catch (Exception exception) {
@@ -387,9 +341,7 @@ public class MainActivity extends AppCompatActivity {
             loadedConfig = configFileManager.save(
                 this,
                 loadedConfig.getProfile(),
-                extraProperties,
-                loadedConfig.getSelectedPresetId(),
-                loadedConfig.isCustomMode()
+                extraProperties
             );
             if (homeFragment != null) {
                 homeFragment.refresh();
@@ -499,75 +451,4 @@ public class MainActivity extends AppCompatActivity {
         return ColorUtils.blendARGB(chromeColor, onSurfaceColor, 0.08f);
     }
 
-    private void refreshRemotePresets(boolean userInitiated) {
-        new Thread(() -> {
-            List<DevicePreset> remotePresets = presetCatalog.refreshRemote(this, AppSettingsStore.getPresetSourceUrl(this));
-            if (remotePresets == null || remotePresets.isEmpty()) {
-                if (userInitiated) {
-                    runOnUiThread(() ->
-                        Snackbar.make(binding.getRoot(), R.string.settings_preset_source_empty, Snackbar.LENGTH_LONG).show()
-                    );
-                }
-                return;
-            }
-
-            runOnUiThread(() -> {
-                if (arePresetsEquivalent(presets, remotePresets)) {
-                    if (userInitiated) {
-                        Snackbar.make(binding.getRoot(), R.string.settings_preset_source_updated, Snackbar.LENGTH_SHORT).show();
-                    }
-                    return;
-                }
-                presets = remotePresets;
-                if (settingsFragment != null) {
-                    settingsFragment.refreshFromHost(true);
-                }
-                if (homeFragment != null) {
-                    homeFragment.refresh();
-                }
-                if (appSettingsFragment != null) {
-                    appSettingsFragment.refreshFromHost();
-                }
-                if (userInitiated) {
-                    Snackbar.make(binding.getRoot(), R.string.settings_preset_source_updated, Snackbar.LENGTH_SHORT).show();
-                }
-            });
-        }, "spoofmydevice-preset-sync").start();
-    }
-
-    private boolean arePresetsEquivalent(List<DevicePreset> left, List<DevicePreset> right) {
-        if (left == right) {
-            return true;
-        }
-        if (left == null || right == null || left.size() != right.size()) {
-            return false;
-        }
-        for (int index = 0; index < left.size(); index++) {
-            DevicePreset leftPreset = left.get(index);
-            DevicePreset rightPreset = right.get(index);
-            if (leftPreset == null || rightPreset == null) {
-                return false;
-            }
-            if (!safeEquals(leftPreset.getId(), rightPreset.getId())) {
-                return false;
-            }
-            if (!safeEquals(leftPreset.getBrandLabel(), rightPreset.getBrandLabel())) {
-                return false;
-            }
-            if (!safeEquals(leftPreset.getModelLabel(), rightPreset.getModelLabel())) {
-                return false;
-            }
-            if (!safeEquals(leftPreset.getSummary(), rightPreset.getSummary())) {
-                return false;
-            }
-            if (!leftPreset.getProfile().matchesPreset(rightPreset.getProfile())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean safeEquals(String left, String right) {
-        return left == null ? right == null : left.equals(right);
-    }
 }

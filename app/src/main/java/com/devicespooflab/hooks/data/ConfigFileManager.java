@@ -25,7 +25,6 @@ import java.util.Set;
 public class ConfigFileManager {
 
     private static final String CONFIG_NAME = "device_profile.conf";
-    private static final String ROOT_MIRROR_PATH = "/data/local/tmp/spoofmydevice_device_profile.conf";
     private static final String PUBLIC_DIR_NAME = "SpoofMyDevice";
     public static final String MIRROR_PREFS_NAME = "module_config_mirror";
     public static final String MIRROR_PREFS_KEY_CONTENT = "content";
@@ -42,22 +41,18 @@ public class ConfigFileManager {
     );
     private static final Set<String> MANAGED_KEYS = buildManagedKeys();
 
-    public LoadedConfig ensureLoaded(Context context, List<DevicePreset> presets) throws Exception {
+    public LoadedConfig ensureLoaded(Context context) throws Exception {
         File configFile = getConfigFile(context);
         if (!configFile.exists()) {
-            if (presets.isEmpty()) {
-                throw new IllegalStateException("No remote presets available yet.");
-            }
-            DevicePreset defaultPreset = presets.get(0);
-            return save(context, defaultPreset.getProfile(), new LinkedHashMap<String, String>(), defaultPreset.getId(), false);
+            return save(context, new DeviceProfile(), new LinkedHashMap<String, String>());
         }
-        return load(context, presets);
+        return load(context);
     }
 
-    public LoadedConfig load(Context context, List<DevicePreset> presets) throws Exception {
+    public LoadedConfig load(Context context) throws Exception {
         File configFile = getConfigFile(context);
         if (!configFile.exists()) {
-            return ensureLoaded(context, presets);
+            return ensureLoaded(context);
         }
 
         Map<String, String> metadata = new LinkedHashMap<>();
@@ -90,20 +85,11 @@ public class ConfigFileManager {
                 }
             }
             makeConfigReadable(context, configFile);
-            writeRootMirror(configFile);
             mirrorForXposed(context, rawContent.toString());
             grantConfigUriReadAccess(context);
         }
 
-        String selectedPresetId = metadata.get("preset_id");
-        DeviceProfile baseProfile = findPresetProfile(presets, selectedPresetId);
-        if (baseProfile == null) {
-            baseProfile = presets.isEmpty()
-                ? new DeviceProfile()
-                : presets.get(0).getProfile();
-        }
-
-        DeviceProfile profile = mergeProfile(baseProfile, properties);
+        DeviceProfile profile = mergeProfile(new DeviceProfile(), properties);
         profile.applyFallbacks();
 
         Map<String, String> extraProperties = new LinkedHashMap<>(properties);
@@ -111,36 +97,20 @@ public class ConfigFileManager {
             extraProperties.remove(key);
         }
 
-        if (selectedPresetId == null || selectedPresetId.trim().isEmpty()) {
-            selectedPresetId = findMatchingPresetId(profile, presets);
-        }
-
-        boolean customMode = "custom".equalsIgnoreCase(metadata.get("mode"));
-        if (!customMode && selectedPresetId != null) {
-            DeviceProfile presetProfile = findPresetProfile(presets, selectedPresetId);
-            customMode = presetProfile == null || !profile.matchesPreset(presetProfile);
-        } else if (!customMode && selectedPresetId == null) {
-            customMode = true;
-        }
-
-        return new LoadedConfig(configFile, profile, extraProperties, selectedPresetId, customMode);
+        return new LoadedConfig(configFile, profile, extraProperties);
     }
 
     public LoadedConfig save(
         Context context,
         DeviceProfile draftProfile,
-        Map<String, String> extraProperties,
-        String selectedPresetId,
-        boolean customMode
+        Map<String, String> extraProperties
     ) throws Exception {
         File configFile = getConfigFile(context);
         DeviceProfile profile = draftProfile.copy();
         profile.applyFallbacks();
 
         StringBuilder builder = new StringBuilder();
-        builder.append("# SpoofMyDevice generated profile\n");
-        builder.append("# meta.preset_id=").append(selectedPresetId == null ? "" : selectedPresetId).append('\n');
-        builder.append("# meta.mode=").append(customMode ? "custom" : "preset").append("\n\n");
+        builder.append("# SpoofMyDevice generated profile\n\n");
 
         builder.append("# Device Identity\n");
         append(builder, "device.form_factor", profile.getBuildCharacteristics().contains("tablet") ? "tablet" : "phone");
@@ -284,14 +254,13 @@ public class ConfigFileManager {
         }
         makeConfigReadable(context, configFile);
         writePublicMirror(builder.toString());
-        writeRootMirror(configFile);
         mirrorForXposed(context, builder.toString());
         grantConfigUriReadAccess(context);
 
         Map<String, String> preserved = extraProperties == null
             ? new LinkedHashMap<String, String>()
             : new LinkedHashMap<>(extraProperties);
-        return new LoadedConfig(configFile, profile, preserved, selectedPresetId, customMode);
+        return new LoadedConfig(configFile, profile, preserved);
     }
 
     public File getConfigFile(Context context) {
@@ -339,27 +308,6 @@ public class ConfigFileManager {
         apply(profile::setSocModel, properties.get("ro.soc.model"));
         apply(profile::setSocManufacturer, properties.get("ro.soc.manufacturer"));
         return profile;
-    }
-
-    private DeviceProfile findPresetProfile(List<DevicePreset> presets, String presetId) {
-        if (presetId == null) {
-            return null;
-        }
-        for (DevicePreset preset : presets) {
-            if (presetId.equals(preset.getId())) {
-                return preset.getProfile();
-            }
-        }
-        return null;
-    }
-
-    private String findMatchingPresetId(DeviceProfile profile, List<DevicePreset> presets) {
-        for (DevicePreset preset : presets) {
-            if (profile.matchesPreset(preset.getProfile())) {
-                return preset.getId();
-            }
-        }
-        return null;
     }
 
     private void append(StringBuilder builder, String key, String value) {
@@ -586,16 +534,6 @@ public class ConfigFileManager {
         }
     }
 
-    private void writeRootMirror(File sourceFile) {
-        try {
-            String sourcePath = sourceFile.getAbsolutePath().replace("'", "'\\''");
-            String command = "cp '" + sourcePath + "' '" + ROOT_MIRROR_PATH + "' && chmod 644 '" + ROOT_MIRROR_PATH + "'";
-            Process process = new ProcessBuilder("su", "-c", command).redirectErrorStream(true).start();
-            process.waitFor();
-        } catch (Throwable ignored) {
-        }
-    }
-
     private void grantConfigUriReadAccess(Context context) {
         try {
             PackageManager packageManager = context.getPackageManager();
@@ -643,21 +581,15 @@ public class ConfigFileManager {
         private final File configFile;
         private final DeviceProfile profile;
         private final Map<String, String> extraProperties;
-        private final String selectedPresetId;
-        private final boolean customMode;
 
         public LoadedConfig(
             File configFile,
             DeviceProfile profile,
-            Map<String, String> extraProperties,
-            String selectedPresetId,
-            boolean customMode
+            Map<String, String> extraProperties
         ) {
             this.configFile = configFile;
             this.profile = profile.copy();
             this.extraProperties = new LinkedHashMap<>(extraProperties);
-            this.selectedPresetId = selectedPresetId;
-            this.customMode = customMode;
         }
 
         public File getConfigFile() {
@@ -670,14 +602,6 @@ public class ConfigFileManager {
 
         public Map<String, String> getExtraProperties() {
             return new LinkedHashMap<>(extraProperties);
-        }
-
-        public String getSelectedPresetId() {
-            return selectedPresetId;
-        }
-
-        public boolean isCustomMode() {
-            return customMode;
         }
     }
 }

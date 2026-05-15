@@ -198,11 +198,6 @@ public class ConfigManager {
             return new LoadedProperties(configFromBridgeReceiver, false);
         }
 
-        Map<String, String> configFromRootMirror = readFromRootMirrorFile(preferredContext);
-        if (!configFromRootMirror.isEmpty()) {
-            return new LoadedProperties(configFromRootMirror, false);
-        }
-
         Map<String, String> configFromReadableMirror = readFromReadableMirrorFile(preferredContext);
         if (!configFromReadableMirror.isEmpty()) {
             return new LoadedProperties(configFromReadableMirror, false);
@@ -346,21 +341,6 @@ public class ConfigManager {
                 handlerThread.quitSafely();
             } catch (Throwable ignored) {
             }
-        }
-    }
-
-    private static Map<String, String> readFromRootMirrorFile(Context preferredContext) {
-        File mirrorFile = new File("/data/local/tmp/spoofmydevice_device_profile.conf");
-        try {
-            if (!mirrorFile.exists() || !mirrorFile.canRead()) {
-                debugLog(preferredContext, "root mirror unavailable exists=" + mirrorFile.exists() + " canRead=" + mirrorFile.canRead());
-                return new HashMap<>();
-            }
-            try (InputStream inputStream = new FileInputStream(mirrorFile)) {
-                return parseConfigStream(inputStream);
-            }
-        } catch (Exception exception) {
-            return new HashMap<>();
         }
     }
 

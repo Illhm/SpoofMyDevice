@@ -29,7 +29,6 @@ import androidx.fragment.app.Fragment;
 import com.devicespooflab.hooks.MainActivity;
 import com.devicespooflab.hooks.R;
 import com.devicespooflab.hooks.data.ConfigFileManager;
-import com.devicespooflab.hooks.data.DevicePreset;
 import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.databinding.FragmentDeviceSettingsBinding;
 import com.devicespooflab.hooks.utils.ConfigManager;
@@ -51,7 +50,6 @@ public class DeviceSettingsFragment extends Fragment {
     );
 
     private FragmentDeviceSettingsBinding binding;
-    private final List<DevicePreset> presets = new ArrayList<>();
     private final ActivityResultLauncher<String[]> phonePermissionsLauncher =
         registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
             if (binding == null) {
@@ -109,19 +107,14 @@ public class DeviceSettingsFragment extends Fragment {
         }
 
         MainActivity activity = (MainActivity) requireActivity();
-        presets.clear();
-        presets.addAll(activity.getPresets());
         ConfigFileManager.LoadedConfig loadedConfig = activity.getLoadedConfigState();
-        selectedPresetId = loadedConfig.getSelectedPresetId();
-        customMode = loadedConfig.isCustomMode();
         workingProfile = loadedConfig.getProfile();
 
-        setupPresetDropdown();
         bindProfile(workingProfile);
         bindAdvancedProperties(loadedConfig.getExtraProperties());
         bindToggleStates(loadedConfig.getExtraProperties());
         populateAdvancedDefaultsIfNeeded();
-        applyMode(customMode, false);
+        updateFieldEnablement();
         initialized = true;
     }
 
@@ -132,68 +125,16 @@ public class DeviceSettingsFragment extends Fragment {
         }
 
         DeviceProfile draft = workingProfile == null ? new DeviceProfile() : workingProfile.copy();
-        draft.setBrand(text(binding.inputBrand));
-        draft.setManufacturer(text(binding.inputManufacturer));
-        draft.setModel(text(binding.inputModel));
-        draft.setDeviceCode(text(binding.inputDevice));
-        draft.setProductName(text(binding.inputProduct));
-        draft.setBoard(text(binding.inputBoard));
-        draft.setHardware(text(binding.inputHardware));
-        draft.setBoardPlatform(text(binding.inputBoardPlatform));
-        draft.setBuildRelease(text(binding.inputAndroidRelease));
-        draft.setBuildSdk(intValue(binding.inputSdk, draft.getBuildSdk()));
-        draft.setSecurityPatch(text(binding.inputSecurityPatch));
-        draft.setBuildId(text(binding.inputBuildId));
-        draft.setBuildDisplayId(text(binding.inputBuildId));
-        draft.setBuildIncremental(text(binding.inputBuildIncremental));
-        draft.setBuildFingerprint(text(binding.inputFingerprint));
-        draft.setScreenWidth(intValue(binding.inputScreenWidth, draft.getScreenWidth()));
-        draft.setScreenHeight(intValue(binding.inputScreenHeight, draft.getScreenHeight()));
-        draft.setScreenDensity(intValue(binding.inputScreenDensity, draft.getScreenDensity()));
         draft.setOperatorAlpha(text(binding.inputOperatorAlpha));
         draft.setOperatorNumeric(text(binding.inputOperatorNumeric));
         draft.setSimOperatorAlpha(text(binding.inputOperatorAlpha));
         draft.setSimOperatorNumeric(text(binding.inputOperatorNumeric));
         draft.setSimCountryIso(text(binding.inputSimCountry));
         draft.setTimezone(text(binding.inputTimezone));
-        return new Draft(draft, selectedPresetId, customMode, buildExtraProperties());
+        return new Draft(draft, buildExtraProperties());
     }
 
     private void setupListeners() {
-        binding.presetDropdown.setOnItemClickListener((parent, view, position, id) -> {
-            if (position < 0 || position >= presets.size()) {
-                return;
-            }
-            DevicePreset preset = presets.get(position);
-            selectedPresetId = preset.getId();
-            workingProfile = preset.getProfile();
-            applyMode(false, true);
-        });
-
-        binding.modeToggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (applying || !isChecked) {
-                return;
-            }
-            if (checkedId == R.id.button_mode_custom) {
-                customMode = true;
-                updateFieldEnablement();
-                return;
-            }
-
-            DevicePreset preset = findPresetById(selectedPresetId);
-            if (preset == null && !presets.isEmpty()) {
-                preset = presets.get(0);
-                selectedPresetId = preset.getId();
-                binding.presetDropdown.setText(preset.getDisplayName(), false);
-            }
-            customMode = false;
-            if (preset != null) {
-                workingProfile = preset.getProfile();
-                bindProfile(workingProfile);
-            }
-            updateFieldEnablement();
-        });
-
         binding.advancedToggleHeader.setOnClickListener(v -> {
             advancedExpanded = !advancedExpanded;
             updateAdvancedSectionState();
@@ -235,53 +176,10 @@ public class DeviceSettingsFragment extends Fragment {
         );
     }
 
-    private void setupPresetDropdown() {
-        List<String> labels = new ArrayList<>();
-        for (DevicePreset preset : presets) {
-            labels.add(preset.getDisplayName());
-        }
-        binding.presetDropdown.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, labels));
-
-        DevicePreset preset = findPresetById(selectedPresetId);
-        if (preset != null) {
-            binding.presetDropdown.setText(preset.getDisplayName(), false);
-        } else if (workingProfile != null) {
-            binding.presetDropdown.setText(workingProfile.getDisplayName(), false);
-        }
-    }
-
-    private void applyMode(boolean enableCustom, boolean rebindProfile) {
-        applying = true;
-        customMode = enableCustom;
-        binding.modeToggle.check(enableCustom ? R.id.button_mode_custom : R.id.button_mode_preset);
-        applying = false;
-        if (rebindProfile && workingProfile != null) {
-            bindProfile(workingProfile);
-        }
-        updateFieldEnablement();
-    }
-
     private void bindProfile(DeviceProfile profile) {
         if (profile == null || binding == null) {
             return;
         }
-        setText(binding.inputBrand, profile.getBrand());
-        setText(binding.inputManufacturer, profile.getManufacturer());
-        setText(binding.inputModel, profile.getModel());
-        setText(binding.inputDevice, profile.getDeviceCode());
-        setText(binding.inputProduct, profile.getProductName());
-        setText(binding.inputBoard, profile.getBoard());
-        setText(binding.inputHardware, profile.getHardware());
-        setText(binding.inputBoardPlatform, profile.getBoardPlatform());
-        setText(binding.inputAndroidRelease, profile.getBuildRelease());
-        setText(binding.inputSdk, String.valueOf(profile.getBuildSdk()));
-        setText(binding.inputSecurityPatch, profile.getSecurityPatch());
-        setText(binding.inputBuildId, profile.getBuildId());
-        setText(binding.inputBuildIncremental, profile.getBuildIncremental());
-        setText(binding.inputFingerprint, profile.getBuildFingerprint());
-        setText(binding.inputScreenWidth, String.valueOf(profile.getScreenWidth()));
-        setText(binding.inputScreenHeight, String.valueOf(profile.getScreenHeight()));
-        setText(binding.inputScreenDensity, String.valueOf(profile.getScreenDensity()));
         setText(binding.inputOperatorAlpha, profile.getOperatorAlpha());
         setText(binding.inputOperatorNumeric, profile.getOperatorNumeric());
         setText(binding.inputSimCountry, profile.getSimCountryIso());
@@ -403,23 +301,6 @@ public class DeviceSettingsFragment extends Fragment {
             return;
         }
 
-        registerToggle(ConfigManager.FIELD_BRAND, layoutOf(binding.inputBrand), true);
-        registerToggle(ConfigManager.FIELD_MANUFACTURER, layoutOf(binding.inputManufacturer), true);
-        registerToggle(ConfigManager.FIELD_MODEL, layoutOf(binding.inputModel), true);
-        registerToggle(ConfigManager.FIELD_DEVICE, layoutOf(binding.inputDevice), true);
-        registerToggle(ConfigManager.FIELD_PRODUCT, layoutOf(binding.inputProduct), true);
-        registerToggle(ConfigManager.FIELD_BOARD, layoutOf(binding.inputBoard), true);
-        registerToggle(ConfigManager.FIELD_HARDWARE, layoutOf(binding.inputHardware), true);
-        registerToggle(ConfigManager.FIELD_BOARD_PLATFORM, layoutOf(binding.inputBoardPlatform), true);
-        registerToggle(ConfigManager.FIELD_ANDROID_RELEASE, layoutOf(binding.inputAndroidRelease), true);
-        registerToggle(ConfigManager.FIELD_SDK, layoutOf(binding.inputSdk), true);
-        registerToggle(ConfigManager.FIELD_SECURITY_PATCH, layoutOf(binding.inputSecurityPatch), true);
-        registerToggle(ConfigManager.FIELD_BUILD_ID, layoutOf(binding.inputBuildId), true);
-        registerToggle(ConfigManager.FIELD_BUILD_INCREMENTAL, layoutOf(binding.inputBuildIncremental), true);
-        registerToggle(ConfigManager.FIELD_FINGERPRINT, layoutOf(binding.inputFingerprint), true);
-        registerToggle(ConfigManager.FIELD_SCREEN_WIDTH, layoutOf(binding.inputScreenWidth), true);
-        registerToggle(ConfigManager.FIELD_SCREEN_HEIGHT, layoutOf(binding.inputScreenHeight), true);
-        registerToggle(ConfigManager.FIELD_SCREEN_DENSITY, layoutOf(binding.inputScreenDensity), true);
         registerToggle(ConfigManager.FIELD_OPERATOR_ALPHA, layoutOf(binding.inputOperatorAlpha), true);
         registerToggle(ConfigManager.FIELD_OPERATOR_NUMERIC, layoutOf(binding.inputOperatorNumeric), true);
         registerToggle(ConfigManager.FIELD_SIM_COUNTRY, layoutOf(binding.inputSimCountry), true);
@@ -524,8 +405,7 @@ public class DeviceSettingsFragment extends Fragment {
 
     private void updateFieldEnablement() {
         for (ToggleBinding toggleBinding : toggleBindings.values()) {
-            boolean enabled = toggleBinding.toggle.isChecked()
-                && (!toggleBinding.dependsOnCustomMode || customMode);
+            boolean enabled = toggleBinding.toggle.isChecked();
             toggleBinding.inputLayout.setEnabled(enabled);
             toggleBinding.inputLayout.setAlpha(toggleBinding.toggle.isChecked() ? 1f : 0.55f);
             if (toggleBinding.inputLayout.getEditText() != null) {
@@ -533,23 +413,6 @@ public class DeviceSettingsFragment extends Fragment {
             }
         }
 
-        applyEditTextState(binding.inputBrand, ConfigManager.FIELD_BRAND, true);
-        applyEditTextState(binding.inputManufacturer, ConfigManager.FIELD_MANUFACTURER, true);
-        applyEditTextState(binding.inputModel, ConfigManager.FIELD_MODEL, true);
-        applyEditTextState(binding.inputDevice, ConfigManager.FIELD_DEVICE, true);
-        applyEditTextState(binding.inputProduct, ConfigManager.FIELD_PRODUCT, true);
-        applyEditTextState(binding.inputBoard, ConfigManager.FIELD_BOARD, true);
-        applyEditTextState(binding.inputHardware, ConfigManager.FIELD_HARDWARE, true);
-        applyEditTextState(binding.inputBoardPlatform, ConfigManager.FIELD_BOARD_PLATFORM, true);
-        applyEditTextState(binding.inputAndroidRelease, ConfigManager.FIELD_ANDROID_RELEASE, true);
-        applyEditTextState(binding.inputSdk, ConfigManager.FIELD_SDK, true);
-        applyEditTextState(binding.inputSecurityPatch, ConfigManager.FIELD_SECURITY_PATCH, true);
-        applyEditTextState(binding.inputBuildId, ConfigManager.FIELD_BUILD_ID, true);
-        applyEditTextState(binding.inputBuildIncremental, ConfigManager.FIELD_BUILD_INCREMENTAL, true);
-        applyEditTextState(binding.inputFingerprint, ConfigManager.FIELD_FINGERPRINT, true);
-        applyEditTextState(binding.inputScreenWidth, ConfigManager.FIELD_SCREEN_WIDTH, true);
-        applyEditTextState(binding.inputScreenHeight, ConfigManager.FIELD_SCREEN_HEIGHT, true);
-        applyEditTextState(binding.inputScreenDensity, ConfigManager.FIELD_SCREEN_DENSITY, true);
         applyEditTextState(binding.inputOperatorAlpha, ConfigManager.FIELD_OPERATOR_ALPHA, true);
         applyEditTextState(binding.inputOperatorNumeric, ConfigManager.FIELD_OPERATOR_NUMERIC, true);
         applyEditTextState(binding.inputSimCountry, ConfigManager.FIELD_SIM_COUNTRY, true);
@@ -572,7 +435,7 @@ public class DeviceSettingsFragment extends Fragment {
         }
         ToggleBinding toggleBinding = toggleBindings.get(fieldId);
         boolean checked = toggleBinding == null || toggleBinding.toggle.isChecked();
-        boolean enabled = checked && (!dependsOnCustomMode || customMode);
+        boolean enabled = checked;
         editText.setEnabled(enabled);
         editText.setAlpha(checked ? 1f : 0.55f);
     }
@@ -788,19 +651,6 @@ public class DeviceSettingsFragment extends Fragment {
         return builder.toString();
     }
 
-    @Nullable
-    private DevicePreset findPresetById(String presetId) {
-        if (presetId == null) {
-            return null;
-        }
-        for (DevicePreset preset : presets) {
-            if (presetId.equals(preset.getId())) {
-                return preset;
-            }
-        }
-        return null;
-    }
-
     private void setText(TextInputEditText editText, String value) {
         editText.setText(value == null ? "" : value);
     }
@@ -819,14 +669,10 @@ public class DeviceSettingsFragment extends Fragment {
 
     public static class Draft {
         public final DeviceProfile profile;
-        public final String selectedPresetId;
-        public final boolean customMode;
         public final Map<String, String> extraProperties;
 
-        public Draft(DeviceProfile profile, String selectedPresetId, boolean customMode, Map<String, String> extraProperties) {
+        public Draft(DeviceProfile profile, Map<String, String> extraProperties) {
             this.profile = profile;
-            this.selectedPresetId = selectedPresetId;
-            this.customMode = customMode;
             this.extraProperties = new LinkedHashMap<>(extraProperties);
         }
     }

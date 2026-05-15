@@ -75,8 +75,6 @@ public class HomeFragment extends Fragment {
         binding.profileCardContainer.setVisibility(moduleActivated ? View.VISIBLE : View.GONE);
         updateStatusIconSize();
         binding.profileModelValue.setText(profile.getModel());
-        binding.profilePresetValue.setText(activity.getPresetLabel(config.getSelectedPresetId()));
-        binding.profileModeValue.setText(getString(config.isCustomMode() ? R.string.mode_custom : R.string.mode_preset));
         binding.profileAndroidValue.setText(getString(
             R.string.home_info_android_value_format,
             profile.getBuildRelease(),

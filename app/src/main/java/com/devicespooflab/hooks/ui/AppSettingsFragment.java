@@ -102,7 +102,6 @@ public class AppSettingsFragment extends Fragment {
             R.string.settings_color_style_summary,
             findLabel(colorStyleOptions, AppSettingsStore.getColorStyle(requireContext()))
         ));
-        binding.presetSourceSummary.setText(AppSettingsStore.getPresetSourceUrl(requireContext()));
         Set<String> safeModePackages = activity.getSafeModePackages();
         if (safeModePackages.isEmpty()) {
             binding.safeModeSummary.setText(R.string.settings_safe_mode_summary_disabled);
@@ -145,7 +144,6 @@ public class AppSettingsFragment extends Fragment {
             }
         });
 
-        binding.presetSourceRow.setOnClickListener(v -> showPresetSourceDialog());
         binding.themeRow.setOnClickListener(v -> showThemeDialog());
         binding.languageRow.setOnClickListener(v -> showLanguageDialog());
         binding.colorStyleRow.setOnClickListener(v -> showColorStyleDialog());
@@ -211,68 +209,6 @@ public class AppSettingsFragment extends Fragment {
             .show();
     }
 
-    private void showPresetSourceDialog() {
-        if (!(requireActivity() instanceof MainActivity)) {
-            return;
-        }
-        MainActivity activity = (MainActivity) requireActivity();
-        View dialogView = LayoutInflater.from(requireContext())
-            .inflate(R.layout.dialog_preset_source, null, false);
-        RadioGroup radioGroup = dialogView.findViewById(R.id.preset_source_radio_group);
-        TextInputLayout inputLayout = dialogView.findViewById(R.id.preset_source_input_layout);
-        TextInputEditText input = dialogView.findViewById(R.id.preset_source_input);
-
-        String currentUrl = activity.getPresetSourceUrl();
-        boolean usingDefault = AppSettingsStore.DEFAULT_PRESET_SOURCE_URL.equals(currentUrl);
-        input.setText(usingDefault ? "" : currentUrl);
-        radioGroup.check(usingDefault ? R.id.preset_source_option_default : R.id.preset_source_option_custom);
-        updatePresetSourceInputState(inputLayout, input, !usingDefault);
-        radioGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            boolean customSelected = checkedId == R.id.preset_source_option_custom;
-            updatePresetSourceInputState(inputLayout, input, customSelected);
-        });
-
-        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.settings_preset_source_title)
-            .setView(dialogView)
-            .setPositiveButton(android.R.string.ok, null)
-            .setNegativeButton(android.R.string.cancel, null)
-            .show();
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            boolean customSelected = radioGroup.getCheckedRadioButtonId() == R.id.preset_source_option_custom;
-            inputLayout.setError(null);
-            String nextValue;
-            if (customSelected) {
-                String customUrl = input.getText() == null ? "" : input.getText().toString().trim();
-                if (customUrl.isEmpty()) {
-                    inputLayout.setError(getString(R.string.settings_preset_source_required));
-                    input.requestFocus();
-                    return;
-                }
-                nextValue = customUrl;
-            } else {
-                nextValue = AppSettingsStore.DEFAULT_PRESET_SOURCE_URL;
-            }
-
-            activity.updatePresetSourceUrl(nextValue);
-            refreshFromHost();
-            dialog.dismiss();
-        });
-    }
-
-    private void updatePresetSourceInputState(TextInputLayout inputLayout, TextInputEditText input, boolean enabled) {
-        inputLayout.setEnabled(enabled);
-        input.setEnabled(enabled);
-        input.setFocusable(enabled);
-        input.setFocusableInTouchMode(enabled);
-        input.setClickable(enabled);
-        if (enabled) {
-            input.requestFocus();
-        } else {
-            inputLayout.setError(null);
-        }
-    }
 
     private void openSafeModePicker() {
         if (!(requireActivity() instanceof MainActivity)) {

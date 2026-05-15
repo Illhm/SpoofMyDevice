@@ -170,7 +170,7 @@
     <string name="real_info_saved_title">Saved spoof target</string>
     <string name="real_info_build_format">Brand: %1$s\nManufacturer: %2$s\nModel: %3$s\nDevice: %4$s\nBoard: %5$s\nHardware: %6$s\nFingerprint: %7$s\nRelease: %8$s\nSDK: %9$d\nSecurity patch: %10$s</string>
     <string name="real_info_runtime_format">Resolution: %1$dx%2$d\nDensity: %3$ddpi\nABIs: %4$s\nTimezone: %5$s</string>
-    <string name="real_info_saved_format">Preset: %1$s\nMode: %2$s\nTarget model: %3$s\nTarget device: %4$s\nTarget fingerprint: %5$s\nTarget resolution: %6$dx%7$d / %8$ddpi\nApply spoofed resolution: %9$s</string>
+    <string name="real_info_saved_format">Target model: %1$s\nTarget device: %2$s\nTarget fingerprint: %3$s\nTarget resolution: %4$dx%5$d / %6$ddpi</string>
     <string name="state_enabled">Enabled</string>
     <string name="state_disabled">Disabled</string>
 

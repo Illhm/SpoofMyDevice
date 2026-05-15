@@ -22,17 +22,17 @@ public class SystemPropertiesHooks {
     private static final String SYSTEM_PROPERTIES_CLASS = "android.os.SystemProperties";
 
     private static String getConsistentSpoofedValue(String key) {
-        if ("ro.hardware".equals(key)) {
-            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildHardware());
-        }
-        if ("ro.board.platform".equals(key) || "ro.product.board".equals(key)) {
-            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildBoard());
-        }
-        if ("ro.soc.model".equals(key)) {
-            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildHardware());
-        }
-        if ("ro.soc.manufacturer".equals(key)) {
-            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildManufacturer());
+        if ("ro.product.brand".equals(key) ||
+            "ro.product.model".equals(key) ||
+            "ro.product.device".equals(key) ||
+            "ro.product.name".equals(key) ||
+            "ro.product.board".equals(key) ||
+            "ro.product.manufacturer".equals(key) ||
+            "ro.hardware".equals(key) ||
+            "ro.board.platform".equals(key) ||
+            "ro.soc.model".equals(key) ||
+            "ro.soc.manufacturer".equals(key)) {
+            return null; // Passthrough real values for hardware identity properties
         }
         return ConfigManager.getSystemProperty(key, null);
     }

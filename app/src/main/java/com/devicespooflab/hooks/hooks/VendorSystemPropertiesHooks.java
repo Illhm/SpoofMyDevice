@@ -41,6 +41,19 @@ public final class VendorSystemPropertiesHooks {
         hookBooleanGetter(clazz);
     }
 
+    private static boolean isHardwareIdentityProperty(String key) {
+        return "ro.product.brand".equals(key) ||
+               "ro.product.model".equals(key) ||
+               "ro.product.device".equals(key) ||
+               "ro.product.name".equals(key) ||
+               "ro.product.board".equals(key) ||
+               "ro.product.manufacturer".equals(key) ||
+               "ro.hardware".equals(key) ||
+               "ro.board.platform".equals(key) ||
+               "ro.soc.model".equals(key) ||
+               "ro.soc.manufacturer".equals(key);
+    }
+
     private static void hookStringGetter(Class<?> clazz, Object... parameterTypes) {
         Object[] args = new Object[parameterTypes.length + 1];
         System.arraycopy(parameterTypes, 0, args, 0, parameterTypes.length);
@@ -48,6 +61,7 @@ public final class VendorSystemPropertiesHooks {
             @Override
             protected void afterHookedMethod(MethodHookParam param) {
                 String key = (String) param.args[0];
+                if (isHardwareIdentityProperty(key)) return;
                 String spoofedValue = ConfigManager.getSystemProperty(key, null);
                 if (spoofedValue != null) {
                     param.setResult(spoofedValue);
@@ -70,6 +84,7 @@ public final class VendorSystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         String key = (String) param.args[0];
+                        if (isHardwareIdentityProperty(key)) return;
                         String spoofedValue = ConfigManager.getSystemProperty(key, null);
                         if (spoofedValue == null) {
                             return;
@@ -92,6 +107,7 @@ public final class VendorSystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         String key = (String) param.args[0];
+                        if (isHardwareIdentityProperty(key)) return;
                         String spoofedValue = ConfigManager.getSystemProperty(key, null);
                         if (spoofedValue == null) {
                             return;
@@ -114,6 +130,7 @@ public final class VendorSystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         String key = (String) param.args[0];
+                        if (isHardwareIdentityProperty(key)) return;
                         String spoofedValue = ConfigManager.getSystemProperty(key, null);
                         if (spoofedValue == null) {
                             return;
