@@ -13,12 +13,9 @@ public class RootSyncHelper {
         }
 
         StringBuilder propContent = new StringBuilder();
+        // Hardware identity fields (MANUFACTURER, BRAND, MODEL, PRODUCT, DEVICE) removed from PIF prop injection
+        // as they are intentionally left as passthrough.
         propContent.append("FINGERPRINT=").append(profile.getBuildFingerprint() != null ? profile.getBuildFingerprint() : "").append("\n");
-        propContent.append("MANUFACTURER=").append(profile.getManufacturer() != null ? profile.getManufacturer() : "").append("\n");
-        propContent.append("BRAND=").append(profile.getBrand() != null ? profile.getBrand() : "").append("\n");
-        propContent.append("MODEL=").append(profile.getModel() != null ? profile.getModel() : "").append("\n");
-        propContent.append("PRODUCT=").append(profile.getProductName() != null ? profile.getProductName() : "").append("\n");
-        propContent.append("DEVICE=").append(profile.getDeviceCode() != null ? profile.getDeviceCode() : "").append("\n");
         propContent.append("RELEASE=").append(profile.getBuildRelease() != null ? profile.getBuildRelease() : "").append("\n");
         propContent.append("ID=").append(profile.getBuildId() != null ? profile.getBuildId() : "").append("\n");
         propContent.append("INCREMENTAL=").append(profile.getBuildIncremental() != null ? profile.getBuildIncremental() : "").append("\n");

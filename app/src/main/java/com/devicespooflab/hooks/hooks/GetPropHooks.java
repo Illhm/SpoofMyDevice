@@ -31,6 +31,25 @@ public final class GetPropHooks {
     private GetPropHooks() {
     }
 
+    private static boolean isHardwareIdentityProperty(String key) {
+        if (key == null) return false;
+        switch (key) {
+            case "ro.product.brand":
+            case "ro.product.model":
+            case "ro.product.device":
+            case "ro.product.name":
+            case "ro.product.board":
+            case "ro.product.manufacturer":
+            case "ro.hardware":
+            case "ro.board.platform":
+            case "ro.soc.model":
+            case "ro.soc.manufacturer":
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             XposedHelpers.findAndHookMethod(
@@ -183,6 +202,10 @@ public final class GetPropHooks {
             return null;
         }
 
+        if (isHardwareIdentityProperty(key)) {
+            return null;
+        }
+
         String spoofedValue = ConfigManager.getSystemProperty(key, null);
         if (spoofedValue == null) {
             return null;
@@ -199,6 +222,9 @@ public final class GetPropHooks {
         if (spoofed.isEmpty()) {
             return stdout;
         }
+
+        // Remove hardware identity properties from the spoofed list
+        spoofed.keySet().removeIf(GetPropHooks::isHardwareIdentityProperty);
 
         Map<String, String> merged = new LinkedHashMap<>();
         if (stdout != null && !stdout.isEmpty()) {

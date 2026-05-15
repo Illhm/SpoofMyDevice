@@ -82,13 +82,8 @@ public class BuildHooks {
     }
 
     private static void applyBuildFields(Class<?> buildClass) {
-        applyOrRestoreString(buildClass, "BRAND", ConfigManager.FIELD_BRAND, ConfigManager.getBuildBrand());
-        applyOrRestoreString(buildClass, "MANUFACTURER", ConfigManager.FIELD_MANUFACTURER, ConfigManager.getBuildManufacturer());
-        applyOrRestoreString(buildClass, "MODEL", ConfigManager.FIELD_MODEL, ConfigManager.getBuildModel());
-        applyOrRestoreString(buildClass, "DEVICE", ConfigManager.FIELD_DEVICE, ConfigManager.getBuildDevice());
-        applyOrRestoreString(buildClass, "PRODUCT", ConfigManager.FIELD_PRODUCT, ConfigManager.getBuildProduct());
-        applyOrRestoreString(buildClass, "BOARD", ConfigManager.FIELD_BOARD, ConfigManager.getBuildBoard());
-        applyOrRestoreString(buildClass, "HARDWARE", ConfigManager.FIELD_HARDWARE, ConfigManager.getBuildHardware());
+        // Hardware identity fields (BRAND, MANUFACTURER, MODEL, DEVICE, PRODUCT, BOARD, HARDWARE, SOC_MODEL, SOC_MANUFACTURER)
+        // are intentionally left as passthrough and no longer spoofed.
         applyOrRestoreString(buildClass, "FINGERPRINT", ConfigManager.FIELD_FINGERPRINT, ConfigManager.getBuildFingerprint());
         applyOrRestoreString(buildClass, "ID", ConfigManager.FIELD_BUILD_ID, ConfigManager.getBuildId());
         applyOrRestoreString(buildClass, "DISPLAY", ConfigManager.FIELD_BUILD_ID, ConfigManager.getBuildDisplay());
@@ -100,10 +95,6 @@ public class BuildHooks {
         setStaticStringArray(buildClass, "SUPPORTED_64_BIT_ABIS", splitAbis(ConfigManager.getCpuAbiList64()));
         setStaticStringArray(buildClass, "SUPPORTED_32_BIT_ABIS", splitAbis(ConfigManager.getCpuAbiList32()));
         setStaticString(buildClass, "CPU_ABI", ConfigManager.getCpuAbi());
-
-        // Fallbacks for SoCs
-        applyOrRestoreString(buildClass, "SOC_MODEL", ConfigManager.FIELD_HARDWARE, ConfigManager.getSystemProperty("ro.soc.model", ConfigManager.getBuildHardware()));
-        applyOrRestoreString(buildClass, "SOC_MANUFACTURER", ConfigManager.FIELD_MANUFACTURER, ConfigManager.getSystemProperty("ro.soc.manufacturer", ConfigManager.getBuildManufacturer()));
 
         String[] abi32 = splitAbis(ConfigManager.getCpuAbiList32());
         if (abi32.length > 0) {
@@ -122,13 +113,7 @@ public class BuildHooks {
     }
 
     private static void captureOriginalBuildFields(Class<?> buildClass) {
-        captureField(buildClass, "BRAND", ORIGINAL_BUILD_FIELDS);
-        captureField(buildClass, "MANUFACTURER", ORIGINAL_BUILD_FIELDS);
-        captureField(buildClass, "MODEL", ORIGINAL_BUILD_FIELDS);
-        captureField(buildClass, "DEVICE", ORIGINAL_BUILD_FIELDS);
-        captureField(buildClass, "PRODUCT", ORIGINAL_BUILD_FIELDS);
-        captureField(buildClass, "BOARD", ORIGINAL_BUILD_FIELDS);
-        captureField(buildClass, "HARDWARE", ORIGINAL_BUILD_FIELDS);
+        // Hardware identity fields removed from capture
         captureField(buildClass, "FINGERPRINT", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "ID", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "DISPLAY", ORIGINAL_BUILD_FIELDS);
@@ -141,8 +126,6 @@ public class BuildHooks {
         captureField(buildClass, "SUPPORTED_32_BIT_ABIS", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "CPU_ABI", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "CPU_ABI2", ORIGINAL_BUILD_FIELDS);
-        captureField(buildClass, "SOC_MODEL", ORIGINAL_BUILD_FIELDS);
-        captureField(buildClass, "SOC_MANUFACTURER", ORIGINAL_BUILD_FIELDS);
     }
 
     private static void captureOriginalVersionFields(Class<?> versionClass) {
@@ -156,13 +139,7 @@ public class BuildHooks {
     }
 
     private static void restoreBuildFields(Class<?> buildClass) {
-        restoreField(buildClass, "BRAND", ORIGINAL_BUILD_FIELDS);
-        restoreField(buildClass, "MANUFACTURER", ORIGINAL_BUILD_FIELDS);
-        restoreField(buildClass, "MODEL", ORIGINAL_BUILD_FIELDS);
-        restoreField(buildClass, "DEVICE", ORIGINAL_BUILD_FIELDS);
-        restoreField(buildClass, "PRODUCT", ORIGINAL_BUILD_FIELDS);
-        restoreField(buildClass, "BOARD", ORIGINAL_BUILD_FIELDS);
-        restoreField(buildClass, "HARDWARE", ORIGINAL_BUILD_FIELDS);
+        // Hardware identity fields removed from restore
         restoreField(buildClass, "FINGERPRINT", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "ID", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "DISPLAY", ORIGINAL_BUILD_FIELDS);
@@ -175,8 +152,6 @@ public class BuildHooks {
         restoreField(buildClass, "SUPPORTED_32_BIT_ABIS", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "CPU_ABI", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "CPU_ABI2", ORIGINAL_BUILD_FIELDS);
-        restoreField(buildClass, "SOC_MODEL", ORIGINAL_BUILD_FIELDS);
-        restoreField(buildClass, "SOC_MANUFACTURER", ORIGINAL_BUILD_FIELDS);
     }
 
     private static void restoreVersionFields(Class<?> versionClass) {

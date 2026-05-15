@@ -21,18 +21,29 @@ public class SystemPropertiesHooks {
     private static final String TAG = "DeviceSpoofLab-SystemProps";
     private static final String SYSTEM_PROPERTIES_CLASS = "android.os.SystemProperties";
 
+    private static boolean isHardwareIdentityProperty(String key) {
+        if (key == null) return false;
+        switch (key) {
+            case "ro.product.brand":
+            case "ro.product.model":
+            case "ro.product.device":
+            case "ro.product.name":
+            case "ro.product.board":
+            case "ro.product.manufacturer":
+            case "ro.hardware":
+            case "ro.board.platform":
+            case "ro.soc.model":
+            case "ro.soc.manufacturer":
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private static String getConsistentSpoofedValue(String key) {
-        if ("ro.hardware".equals(key)) {
-            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildHardware());
-        }
-        if ("ro.board.platform".equals(key) || "ro.product.board".equals(key)) {
-            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildBoard());
-        }
-        if ("ro.soc.model".equals(key)) {
-            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildHardware());
-        }
-        if ("ro.soc.manufacturer".equals(key)) {
-            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildManufacturer());
+        // Hardware identity fields are intentionally left as passthrough
+        if (isHardwareIdentityProperty(key)) {
+            return null;
         }
         return ConfigManager.getSystemProperty(key, null);
     }
