@@ -6,14 +6,14 @@ import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
-class ShopeeReceiverHook : IXposedHookLoadPackage {
+class UniversalReceiverHook : IXposedHookLoadPackage {
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
-        if (lpparam.packageName != "com.shopee.id") {
-            return
+        if (lpparam.packageName == "android") {
+            return // Skip system framework to avoid bootloops or instability
         }
 
-        XposedBridge.log("ShopeeReceiverHook: Hooking com.shopee.id")
+        XposedBridge.log("UniversalReceiverHook: Hooking ${lpparam.packageName}")
 
         try {
             val contextImplClass = XposedHelpers.findClass("android.app.ContextImpl", lpparam.classLoader)
@@ -37,16 +37,16 @@ class ShopeeReceiverHook : IXposedHookLoadPackage {
                             if ((flags and receiverExported) == 0 && (flags and receiverNotExported) == 0) {
                                 // Apply RECEIVER_EXPORTED flag
                                 param.args[i] = flags or receiverExported
-                                XposedBridge.log("ShopeeReceiverHook: Modified flags for registerReceiverInternal to include RECEIVER_EXPORTED. Original: $flags, New: ${param.args[i]}")
+                                XposedBridge.log("UniversalReceiverHook: Modified flags for registerReceiverInternal to include RECEIVER_EXPORTED. Original: $flags, New: ${param.args[i]}")
                             }
                             break // Only process the last integer argument assuming it represents the flags
                         }
                     }
                 }
             })
-            XposedBridge.log("ShopeeReceiverHook: Successfully hooked registerReceiverInternal")
+            XposedBridge.log("UniversalReceiverHook: Successfully hooked registerReceiverInternal")
         } catch (t: Throwable) {
-            XposedBridge.log("ShopeeReceiverHook: Failed to hook registerReceiverInternal: " + t.message)
+            XposedBridge.log("UniversalReceiverHook: Failed to hook registerReceiverInternal: " + t.message)
             XposedBridge.log(t)
         }
     }
