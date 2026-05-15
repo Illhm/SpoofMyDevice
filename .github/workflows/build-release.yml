@@ -2,10 +2,7 @@ name: Build and Sign Release APK
 
 on:
   workflow_dispatch: # Memungkinkan kamu menjalankan workflow ini secara manual dari tab Actions
-  push:
-    branches:
-      - main
-      - master
+  pull_request:      # Memicu otomatis setiap kali ada Pull Request baru di branch mana pun
 
 jobs:
   build-and-sign:
@@ -20,7 +17,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17' # Standar untuk Gradle versi baru, ubah ke '11' atau '21' jika diperlukan
+          java-version: '17' # Standar untuk Gradle versi baru
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -29,30 +26,29 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Release APK
-        # Menjalankan task assembleRelease menggunakan Kotlin DSL config
         run: ./gradlew assembleRelease
 
       - name: Generate Keystore, Zipalign, and Sign APK
         env:
-          KEYSTORE_PASSWORD: "supersecretpassword" # Bisa diganti sesuai kebutuhan
+          KEYSTORE_PASSWORD: "supersecretpassword"
           KEY_ALIAS: "release_alias"
         run: |
-          # 1. Cari path file APK hasil build (otomatis mendeteksi folder App atau app)
+          # 1. Cari path file APK hasil build
           APK_PATH=$(find . -path "*/build/outputs/apk/release/*.apk" | grep -v "unaligned" | head -n 1)
           echo "Ditemukan APK di: $APK_PATH"
 
           # 2. Generate Keystore baru secara otomatis
           keytool -genkey -v -keystore release.keystore -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $KEYSTORE_PASSWORD -keypass $KEYSTORE_PASSWORD -dname "CN=Android Release, OU=Development, O=Android, L=Rembang, S=Jawa Tengah, C=ID"
 
-          # Cari versi Android Build Tools terbaru yang terinstall di runner
+          # Cari versi Android Build Tools terbaru
           BUILD_TOOLS_VERSION=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
           ZIPALIGN="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/zipalign"
           APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
 
-          # 3. Lakukan Zipalign (Syarat wajib Android sebelum di-sign)
+          # 3. Lakukan Zipalign
           $ZIPALIGN -v -p 4 $APK_PATH app-release-aligned.apk
 
-          # 4. Sign APK menggunakan apksigner dan keystore yang baru dibuat
+          # 4. Sign APK menggunakan apksigner
           $APKSIGNER sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --out app-release-signed.apk app-release-aligned.apk
           
           # Verifikasi Signature
@@ -64,3 +60,4 @@ jobs:
           name: Release-Signed-APK
           path: app-release-signed.apk
           retention-days: 7
+          
