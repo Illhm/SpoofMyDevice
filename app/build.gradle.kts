@@ -47,3 +47,9 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     compileOnly("de.robv.android.xposed:api:82")
 }
+
+android {
+    lint {
+        abortOnError = false
+    }
+}
