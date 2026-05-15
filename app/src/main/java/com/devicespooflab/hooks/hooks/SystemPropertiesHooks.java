@@ -21,6 +21,22 @@ public class SystemPropertiesHooks {
     private static final String TAG = "DeviceSpoofLab-SystemProps";
     private static final String SYSTEM_PROPERTIES_CLASS = "android.os.SystemProperties";
 
+    private static String getConsistentSpoofedValue(String key) {
+        if ("ro.hardware".equals(key)) {
+            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildHardware());
+        }
+        if ("ro.board.platform".equals(key) || "ro.product.board".equals(key)) {
+            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildBoard());
+        }
+        if ("ro.soc.model".equals(key)) {
+            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildHardware());
+        }
+        if ("ro.soc.manufacturer".equals(key)) {
+            return ConfigManager.getSystemProperty(key, ConfigManager.getBuildManufacturer());
+        }
+        return ConfigManager.getSystemProperty(key, null);
+    }
+
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             hookSystemProperties(null, lpparam.packageName);
@@ -60,7 +76,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getConsistentSpoofedValue(key);
 
                         if (spoofedValue != null) {
                             param.setResult(spoofedValue);
@@ -82,7 +98,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getConsistentSpoofedValue(key);
 
                         if (spoofedValue != null) {
                             param.setResult(spoofedValue);
@@ -104,7 +120,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getConsistentSpoofedValue(key);
 
                         if (spoofedValue != null) {
                             try {
@@ -131,7 +147,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getConsistentSpoofedValue(key);
 
                         if (spoofedValue != null) {
                             // Handle both "true"/"false" and "1"/"0"
@@ -156,7 +172,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getConsistentSpoofedValue(key);
 
                         if (spoofedValue != null) {
                             try {
