@@ -101,6 +101,10 @@ public class BuildHooks {
         setStaticStringArray(buildClass, "SUPPORTED_32_BIT_ABIS", splitAbis(ConfigManager.getCpuAbiList32()));
         setStaticString(buildClass, "CPU_ABI", ConfigManager.getCpuAbi());
 
+        // Fallbacks for SoCs
+        applyOrRestoreString(buildClass, "SOC_MODEL", ConfigManager.FIELD_HARDWARE, ConfigManager.getSystemProperty("ro.soc.model", ConfigManager.getBuildHardware()));
+        applyOrRestoreString(buildClass, "SOC_MANUFACTURER", ConfigManager.FIELD_MANUFACTURER, ConfigManager.getSystemProperty("ro.soc.manufacturer", ConfigManager.getBuildManufacturer()));
+
         String[] abi32 = splitAbis(ConfigManager.getCpuAbiList32());
         if (abi32.length > 0) {
             setStaticString(buildClass, "CPU_ABI2", abi32.length > 1 ? abi32[1] : abi32[0]);
@@ -137,6 +141,8 @@ public class BuildHooks {
         captureField(buildClass, "SUPPORTED_32_BIT_ABIS", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "CPU_ABI", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "CPU_ABI2", ORIGINAL_BUILD_FIELDS);
+        captureField(buildClass, "SOC_MODEL", ORIGINAL_BUILD_FIELDS);
+        captureField(buildClass, "SOC_MANUFACTURER", ORIGINAL_BUILD_FIELDS);
     }
 
     private static void captureOriginalVersionFields(Class<?> versionClass) {
@@ -169,6 +175,8 @@ public class BuildHooks {
         restoreField(buildClass, "SUPPORTED_32_BIT_ABIS", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "CPU_ABI", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "CPU_ABI2", ORIGINAL_BUILD_FIELDS);
+        restoreField(buildClass, "SOC_MODEL", ORIGINAL_BUILD_FIELDS);
+        restoreField(buildClass, "SOC_MANUFACTURER", ORIGINAL_BUILD_FIELDS);
     }
 
     private static void restoreVersionFields(Class<?> versionClass) {
