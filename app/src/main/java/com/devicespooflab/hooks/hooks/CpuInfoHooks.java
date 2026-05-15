@@ -52,9 +52,9 @@ public class CpuInfoHooks {
         isGeneratingSpoof.set(true);
         try {
             if (fakeFile.exists() && fakeFile.length() > 0) {
-                // If it already exists and has content, we might not need to regenerate,
-                // but for safety in case config changed, we regenerate or just return.
-                // Let's regenerate it to be safe.
+                // If it already exists and has content, we return immediately
+                // to avoid an unnecessary I/O bottleneck on every access.
+                return;
             }
             File cacheDir = fakeFile.getParentFile();
             if (cacheDir != null && !cacheDir.exists()) {
@@ -102,7 +102,9 @@ public class CpuInfoHooks {
                     String path = (String) param.args[0];
                     if (path != null && path.contains("/proc/cpuinfo")) {
                         generateSpoofedCpuInfo(spoofedFile);
-                        param.args[0] = spoofedPath;
+                        if (spoofedFile.exists() && spoofedFile.length() > 0) {
+                            param.args[0] = spoofedPath;
+                        }
                     }
                 }
             });
@@ -120,7 +122,9 @@ public class CpuInfoHooks {
                     String path = (String) param.args[0];
                     if (path != null && path.contains("/proc/cpuinfo")) {
                         generateSpoofedCpuInfo(spoofedFile);
-                        param.args[0] = spoofedPath;
+                        if (spoofedFile.exists() && spoofedFile.length() > 0) {
+                            param.args[0] = spoofedPath;
+                        }
                     }
                 }
             });
@@ -140,8 +144,10 @@ public class CpuInfoHooks {
                     }
                     if (fullPath.contains("/proc/cpuinfo")) {
                         generateSpoofedCpuInfo(spoofedFile);
-                        param.args[0] = spoofedFile.getParent();
-                        param.args[1] = spoofedFile.getName();
+                        if (spoofedFile.exists() && spoofedFile.length() > 0) {
+                            param.args[0] = spoofedFile.getParent();
+                            param.args[1] = spoofedFile.getName();
+                        }
                     }
                 }
             });
@@ -161,8 +167,10 @@ public class CpuInfoHooks {
                     }
                     if (fullPath.contains("/proc/cpuinfo")) {
                         generateSpoofedCpuInfo(spoofedFile);
-                        param.args[0] = spoofedFile.getParentFile();
-                        param.args[1] = spoofedFile.getName();
+                        if (spoofedFile.exists() && spoofedFile.length() > 0) {
+                            param.args[0] = spoofedFile.getParentFile();
+                            param.args[1] = spoofedFile.getName();
+                        }
                     }
                 }
             });
@@ -180,7 +188,9 @@ public class CpuInfoHooks {
                     String path = (String) param.args[0];
                     if (path != null && path.contains("/proc/cpuinfo")) {
                         generateSpoofedCpuInfo(spoofedFile);
-                        param.args[0] = spoofedPath;
+                        if (spoofedFile.exists() && spoofedFile.length() > 0) {
+                            param.args[0] = spoofedPath;
+                        }
                     }
                 }
             });
@@ -192,7 +202,9 @@ public class CpuInfoHooks {
                     File file = (File) param.args[0];
                     if (file != null && file.getAbsolutePath().contains("/proc/cpuinfo")) {
                         generateSpoofedCpuInfo(spoofedFile);
-                        param.args[0] = spoofedFile;
+                        if (spoofedFile.exists() && spoofedFile.length() > 0) {
+                            param.args[0] = spoofedFile;
+                        }
                     }
                 }
             });
