@@ -4,6 +4,9 @@ import android.os.Build;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
 
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
@@ -47,9 +50,23 @@ public class AppSetIdHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        String spoofedValue = ConfigManager.getAppSetId();
-                        if (spoofedValue != null) {
-                            param.setResult(spoofedValue);
+                        String configuredValue = ConfigManager.getAppSetId();
+                        if (configuredValue != null) {
+                            // If user explicitly configured an AppSetId, use it.
+                            param.setResult(configuredValue);
+                        } else {
+                            // Otherwise, generate a deterministic UUID based on the package name.
+                            // The AppSetId must be deterministic and persistent per package name.
+                            // Random UUIDs on every call break session consistency and cause network drops.
+                            try {
+                                String packageName = lpparam.packageName;
+                                if (packageName != null && !packageName.isEmpty()) {
+                                    String deterministicUuid = UUID.nameUUIDFromBytes(packageName.getBytes(StandardCharsets.UTF_8)).toString();
+                                    param.setResult(deterministicUuid);
+                                }
+                            } catch (Exception e) {
+                                XposedBridge.log(TAG + ": Error generating deterministic AppSetId: " + e.getMessage());
+                            }
                         }
                     }
                 });
@@ -65,9 +82,7 @@ public class AppSetIdHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        if (ConfigManager.getAppSetId() != null) {
-                            param.setResult(1); // APP scope
-                        }
+                        param.setResult(1); // APP scope
                     }
                 });
         } catch (Exception e) {
