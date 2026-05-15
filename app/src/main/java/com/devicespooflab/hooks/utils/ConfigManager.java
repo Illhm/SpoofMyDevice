@@ -1066,6 +1066,10 @@ public class ConfigManager {
         return getConfigValue("ro.hardware");
     }
 
+    public static String getSocModel() {
+        return getConfigValue("ro.soc.model");
+    }
+
     public static String getBuildBootloader() {
         return getOptionalConfigValue("ro.bootloader");
     }
