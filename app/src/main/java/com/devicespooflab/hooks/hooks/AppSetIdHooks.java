@@ -49,7 +49,13 @@ public class AppSetIdHooks {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         String spoofedValue = ConfigManager.getAppSetId();
                         if (spoofedValue != null) {
-                            param.setResult(spoofedValue);
+                            try {
+                                String uniqueKey = lpparam.packageName + "-" + spoofedValue;
+                                java.util.UUID uuid = java.util.UUID.nameUUIDFromBytes(uniqueKey.getBytes("UTF-8"));
+                                param.setResult(uuid.toString());
+                            } catch (Exception e) {
+                                param.setResult(spoofedValue);
+                            }
                         }
                     }
                 });

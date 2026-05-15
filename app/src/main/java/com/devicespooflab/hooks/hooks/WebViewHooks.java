@@ -9,6 +9,12 @@ import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Hooks WebView User-Agent to match Pixel 7 Pro device profile.
  *
@@ -18,6 +24,8 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public class WebViewHooks {
 
     private static final String TAG = "DeviceSpoofLab-WebView";
+    private static final Set<String> hookedSettingsClasses = Collections.synchronizedSet(new HashSet<>());
+    private static final Pattern DEVICE_PATTERN = Pattern.compile("\\(Linux;[^)]+\\)");
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
@@ -41,24 +49,33 @@ public class WebViewHooks {
         }
 
         try {
-            // Hook WebView.getSettings() to intercept and modify the returned WebSettings object
             XposedHelpers.findAndHookMethod(webViewClass, "getSettings",
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         Object settings = param.getResult();
                         if (settings != null) {
-                            // Hook getUserAgentString() on the actual implementation class
                             Class<?> settingsClass = settings.getClass();
+                            String className = settingsClass.getName();
 
-                            // Set spoofed UA immediately
-                            String spoofedUA = ConfigManager.getWebViewUserAgent();
-                            if (spoofedUA != null) {
-                                try {
-                                    XposedHelpers.callMethod(settings, "setUserAgentString", spoofedUA);
-                                } catch (Exception e) {
-                                    // Failed to set, that's okay
+                            if (!hookedSettingsClasses.contains(className)) {
+                                hookedSettingsClasses.add(className);
+                                hookSettingsClass(settingsClass);
+                            }
+
+                            // Proactively spoof the UA natively. Retrieve the default UA, patch it, and set it.
+                            try {
+                                String defaultUA = (String) XposedHelpers.callMethod(settings, "getUserAgentString");
+                                String spoofedUA = ConfigManager.getWebViewUserAgent();
+                                if (defaultUA != null && spoofedUA != null) {
+                                    String patchedUA = replaceDevicePortion(defaultUA, spoofedUA);
+                                    // Bypassing our own hook logic isn't strictly necessary since our hook
+                                    // preserves custom suffixes (like the default Android one), but we call
+                                    // it directly to push it to the native engine immediately.
+                                    XposedHelpers.callMethod(settings, "setUserAgentString", patchedUA);
                                 }
+                            } catch (Exception e) {
+                                XposedBridge.log(TAG + ": Failed to initialize UA natively: " + e.getMessage());
                             }
                         }
                     }
@@ -66,6 +83,48 @@ public class WebViewHooks {
         } catch (Exception e) {
             XposedBridge.log(TAG + ": Failed to hook WebView.getSettings(): " + e.getMessage());
         }
+    }
+
+    private static void hookSettingsClass(Class<?> settingsClass) {
+        try {
+            XposedHelpers.findAndHookMethod(settingsClass, "getUserAgentString", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    String originalUA = (String) param.getResult();
+                    String spoofedUA = ConfigManager.getWebViewUserAgent();
+                    if (originalUA != null && spoofedUA != null) {
+                        param.setResult(replaceDevicePortion(originalUA, spoofedUA));
+                    }
+                }
+            });
+        } catch (Exception e) {
+            XposedBridge.log(TAG + ": Failed to hook getUserAgentString: " + e.getMessage());
+        }
+
+        try {
+            XposedHelpers.findAndHookMethod(settingsClass, "setUserAgentString", String.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    String customUA = (String) param.args[0];
+                    String spoofedUA = ConfigManager.getWebViewUserAgent();
+                    if (customUA != null && spoofedUA != null) {
+                        param.args[0] = replaceDevicePortion(customUA, spoofedUA);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            XposedBridge.log(TAG + ": Failed to hook setUserAgentString: " + e.getMessage());
+        }
+    }
+
+    private static String replaceDevicePortion(String originalUA, String spoofedUA) {
+        Matcher originalMatcher = DEVICE_PATTERN.matcher(originalUA);
+        Matcher spoofedMatcher = DEVICE_PATTERN.matcher(spoofedUA);
+
+        if (originalMatcher.find() && spoofedMatcher.find()) {
+            return originalUA.replace(originalMatcher.group(0), spoofedMatcher.group(0));
+        }
+        return originalUA;
     }
 
     private static void hookWebViewConstructor(XC_LoadPackage.LoadPackageParam lpparam) {
@@ -85,12 +144,7 @@ public class WebViewHooks {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         try {
                             Object webView = param.thisObject;
-                            Object settings = XposedHelpers.callMethod(webView, "getSettings");
-
-                            String spoofedUA = ConfigManager.getWebViewUserAgent();
-                            if (spoofedUA != null) {
-                                XposedHelpers.callMethod(settings, "setUserAgentString", spoofedUA);
-                            }
+                            XposedHelpers.callMethod(webView, "getSettings");
                         } catch (Exception e) {
                             // Failed to set UA in constructor, that's okay
                         }
@@ -109,12 +163,7 @@ public class WebViewHooks {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         try {
                             Object webView = param.thisObject;
-                            Object settings = XposedHelpers.callMethod(webView, "getSettings");
-
-                            String spoofedUA = ConfigManager.getWebViewUserAgent();
-                            if (spoofedUA != null) {
-                                XposedHelpers.callMethod(settings, "setUserAgentString", spoofedUA);
-                            }
+                            XposedHelpers.callMethod(webView, "getSettings");
                         } catch (Exception e) {
                             // Failed to set UA in constructor, that's okay
                         }
@@ -133,12 +182,7 @@ public class WebViewHooks {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         try {
                             Object webView = param.thisObject;
-                            Object settings = XposedHelpers.callMethod(webView, "getSettings");
-
-                            String spoofedUA = ConfigManager.getWebViewUserAgent();
-                            if (spoofedUA != null) {
-                                XposedHelpers.callMethod(settings, "setUserAgentString", spoofedUA);
-                            }
+                            XposedHelpers.callMethod(webView, "getSettings");
                         } catch (Exception e) {
                             // Failed to set UA in constructor, that's okay
                         }
