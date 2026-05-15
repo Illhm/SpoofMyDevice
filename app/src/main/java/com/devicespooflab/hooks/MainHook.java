@@ -4,6 +4,7 @@ import android.os.Build;
 
 import com.devicespooflab.hooks.hooks.AdvertisingIdHooks;
 import com.devicespooflab.hooks.hooks.AppSetIdHooks;
+import com.devicespooflab.hooks.hooks.ContextHooks;
 import com.devicespooflab.hooks.hooks.BuildHooks;
 import com.devicespooflab.hooks.hooks.DisplayHooks;
 import com.devicespooflab.hooks.hooks.EmulatorDetectionHooks;
@@ -164,6 +165,13 @@ public class MainHook implements IXposedHookLoadPackage {
             XposedBridge.log(TAG + ": PackageManagerHooks loaded");
         } catch (Exception exception) {
             XposedBridge.log(TAG + ": PackageManagerHooks failed: " + exception.getMessage());
+        }
+
+        try {
+            ContextHooks.hook(lpparam);
+            XposedBridge.log(TAG + ": ContextHooks loaded");
+        } catch (Exception exception) {
+            XposedBridge.log(TAG + ": ContextHooks failed: " + exception.getMessage());
         }
 
         XposedBridge.log(TAG + ": All hooks initialized for " + lpparam.packageName);
