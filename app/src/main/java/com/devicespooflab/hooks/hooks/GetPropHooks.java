@@ -157,7 +157,7 @@ public final class GetPropHooks {
             return new GetPropRequest(true, null);
         }
 
-        if (("sh".equals(first) || "su".equals(first)) && normalized.size() >= 3) {
+        if (("sh".equals(first)) && normalized.size() >= 3) {
             int commandIndex = normalized.indexOf("-c");
             if (commandIndex >= 0 && commandIndex + 1 < normalized.size()) {
                 return parseShellCommand(normalized.get(commandIndex + 1));
