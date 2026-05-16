@@ -5,18 +5,13 @@ import android.os.Build;
 import com.devicespooflab.hooks.hooks.AdvertisingIdHooks;
 import com.devicespooflab.hooks.hooks.AppSetIdHooks;
 import com.devicespooflab.hooks.hooks.ContextHooks;
-import com.devicespooflab.hooks.hooks.BuildHooks;
 import com.devicespooflab.hooks.hooks.DisplayHooks;
 import com.devicespooflab.hooks.hooks.EmulatorDetectionHooks;
-import com.devicespooflab.hooks.hooks.GetPropHooks;
 import com.devicespooflab.hooks.hooks.HardwareHooks;
-import com.devicespooflab.hooks.hooks.JavaSystemPropertyHooks;
 import com.devicespooflab.hooks.hooks.MediaDrmHooks;
 import com.devicespooflab.hooks.hooks.PackageManagerHooks;
 import com.devicespooflab.hooks.hooks.SettingsHooks;
-import com.devicespooflab.hooks.hooks.SystemPropertiesHooks;
 import com.devicespooflab.hooks.hooks.TelephonyHooks;
-import com.devicespooflab.hooks.hooks.VendorSystemPropertiesHooks;
 import com.devicespooflab.hooks.hooks.WebViewHooks;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
@@ -55,41 +50,6 @@ public class MainHook implements IXposedHookLoadPackage {
             XposedBridge.log(TAG + ": Failed to init config: " + exception.getMessage());
             exception.printStackTrace();
             return;
-        }
-
-        try {
-            SystemPropertiesHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": SystemPropertiesHooks loaded");
-        } catch (Exception exception) {
-            XposedBridge.log(TAG + ": SystemPropertiesHooks failed: " + exception.getMessage());
-        }
-
-        try {
-            VendorSystemPropertiesHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": VendorSystemPropertiesHooks loaded");
-        } catch (Exception exception) {
-            XposedBridge.log(TAG + ": VendorSystemPropertiesHooks failed: " + exception.getMessage());
-        }
-
-        try {
-            JavaSystemPropertyHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": JavaSystemPropertyHooks loaded");
-        } catch (Exception exception) {
-            XposedBridge.log(TAG + ": JavaSystemPropertyHooks failed: " + exception.getMessage());
-        }
-
-        try {
-            GetPropHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": GetPropHooks loaded");
-        } catch (Exception exception) {
-            XposedBridge.log(TAG + ": GetPropHooks failed: " + exception.getMessage());
-        }
-
-        try {
-            BuildHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": BuildHooks loaded");
-        } catch (Exception exception) {
-            XposedBridge.log(TAG + ": BuildHooks failed: " + exception.getMessage());
         }
 
         hookApplicationAttachForReload(lpparam);
@@ -190,7 +150,6 @@ public class MainHook implements IXposedHookLoadPackage {
                         try {
                             android.content.Context context = (android.content.Context) param.args[0];
                             ConfigManager.forceReload(context);
-                            BuildHooks.reapply(((android.content.Context) param.args[0]).getClassLoader(), lpparam.packageName);
                             XposedBridge.log(TAG + ": Config reloaded after Application.attach for " + lpparam.packageName);
                         } catch (Throwable throwable) {
                             XposedBridge.log(TAG + ": Failed to reload config after attach for " + lpparam.packageName + ": " + throwable.getMessage());
@@ -219,7 +178,6 @@ public class MainHook implements IXposedHookLoadPackage {
                             }
                             android.app.Activity activity = (android.app.Activity) param.thisObject;
                             ConfigManager.forceReload(activity);
-                            BuildHooks.reapply(activity.getClassLoader(), lpparam.packageName);
                         } catch (Throwable ignored) {
                         }
                     }
