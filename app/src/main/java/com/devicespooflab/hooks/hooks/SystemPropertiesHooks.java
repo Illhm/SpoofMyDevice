@@ -21,6 +21,8 @@ public class SystemPropertiesHooks {
     private static final String TAG = "DeviceSpoofLab-SystemProps";
     private static final String SYSTEM_PROPERTIES_CLASS = "android.os.SystemProperties";
 
+    private static final ThreadLocal<Boolean> isHooking = new ThreadLocal<>();
+
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             hookSystemProperties(null, lpparam.packageName);
@@ -56,14 +58,22 @@ public class SystemPropertiesHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (Boolean.TRUE.equals(isHooking.get())) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        isHooking.set(true);
+                        try {
+                            String key = (String) param.args[0];
+                            if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                                return;
+                            }
+                            String spoofedValue = ConfigManager.getSystemProperty(key, null);
 
-                        if (spoofedValue != null) {
-                            param.setResult(spoofedValue);
+                            if (spoofedValue != null) {
+                                param.setResult(spoofedValue);
+                            }
+                        } finally {
+                            isHooking.remove();
                         }
                     }
                 });
@@ -78,14 +88,22 @@ public class SystemPropertiesHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (Boolean.TRUE.equals(isHooking.get())) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        isHooking.set(true);
+                        try {
+                            String key = (String) param.args[0];
+                            if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                                return;
+                            }
+                            String spoofedValue = ConfigManager.getSystemProperty(key, null);
 
-                        if (spoofedValue != null) {
-                            param.setResult(spoofedValue);
+                            if (spoofedValue != null) {
+                                param.setResult(spoofedValue);
+                            }
+                        } finally {
+                            isHooking.remove();
                         }
                     }
                 });
@@ -100,19 +118,27 @@ public class SystemPropertiesHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (Boolean.TRUE.equals(isHooking.get())) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
-
-                        if (spoofedValue != null) {
-                            try {
-                                int intValue = Integer.parseInt(spoofedValue);
-                                param.setResult(intValue);
-                            } catch (NumberFormatException e) {
-                                // Invalid int value, keep original
+                        isHooking.set(true);
+                        try {
+                            String key = (String) param.args[0];
+                            if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                                return;
                             }
+                            String spoofedValue = ConfigManager.getSystemProperty(key, null);
+
+                            if (spoofedValue != null) {
+                                try {
+                                    int intValue = Integer.parseInt(spoofedValue);
+                                    param.setResult(intValue);
+                                } catch (NumberFormatException e) {
+                                    // Invalid int value, keep original
+                                }
+                            }
+                        } finally {
+                            isHooking.remove();
                         }
                     }
                 });
@@ -127,17 +153,25 @@ public class SystemPropertiesHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (Boolean.TRUE.equals(isHooking.get())) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        isHooking.set(true);
+                        try {
+                            String key = (String) param.args[0];
+                            if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                                return;
+                            }
+                            String spoofedValue = ConfigManager.getSystemProperty(key, null);
 
-                        if (spoofedValue != null) {
-                            // Handle both "true"/"false" and "1"/"0"
-                            boolean boolValue = spoofedValue.equals("1") ||
-                                              spoofedValue.equalsIgnoreCase("true");
-                            param.setResult(boolValue);
+                            if (spoofedValue != null) {
+                                // Handle both "true"/"false" and "1"/"0"
+                                boolean boolValue = spoofedValue.equals("1") ||
+                                                  spoofedValue.equalsIgnoreCase("true");
+                                param.setResult(boolValue);
+                            }
+                        } finally {
+                            isHooking.remove();
                         }
                     }
                 });
@@ -152,19 +186,27 @@ public class SystemPropertiesHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (Boolean.TRUE.equals(isHooking.get())) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
-
-                        if (spoofedValue != null) {
-                            try {
-                                long longValue = Long.parseLong(spoofedValue);
-                                param.setResult(longValue);
-                            } catch (NumberFormatException e) {
-                                // Invalid long value, keep original
+                        isHooking.set(true);
+                        try {
+                            String key = (String) param.args[0];
+                            if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                                return;
                             }
+                            String spoofedValue = ConfigManager.getSystemProperty(key, null);
+
+                            if (spoofedValue != null) {
+                                try {
+                                    long longValue = Long.parseLong(spoofedValue);
+                                    param.setResult(longValue);
+                                } catch (NumberFormatException e) {
+                                    // Invalid long value, keep original
+                                }
+                            }
+                        } finally {
+                            isHooking.remove();
                         }
                     }
                 });
