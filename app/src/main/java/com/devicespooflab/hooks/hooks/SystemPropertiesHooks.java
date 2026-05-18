@@ -48,6 +48,7 @@ public class SystemPropertiesHooks {
         if (sysPropClass == null) {
             return;
         }
+        final boolean bypassVersionSpoof = ConfigManager.shouldBypassVersionSpoof(packageName);
 
         // Hook get(String key)
         try {
@@ -57,7 +58,7 @@ public class SystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (bypassVersionSpoof && isVersionProperty(key)) {
                             return;
                         }
                         String spoofedValue = ConfigManager.getSystemProperty(key, null);
@@ -79,7 +80,7 @@ public class SystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (bypassVersionSpoof && isVersionProperty(key)) {
                             return;
                         }
                         String spoofedValue = ConfigManager.getSystemProperty(key, null);
@@ -101,7 +102,7 @@ public class SystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (bypassVersionSpoof && isVersionProperty(key)) {
                             return;
                         }
                         String spoofedValue = ConfigManager.getSystemProperty(key, null);
@@ -128,7 +129,7 @@ public class SystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (bypassVersionSpoof && isVersionProperty(key)) {
                             return;
                         }
                         String spoofedValue = ConfigManager.getSystemProperty(key, null);
@@ -153,7 +154,7 @@ public class SystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         String key = (String) param.args[0];
-                        if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
+                        if (bypassVersionSpoof && isVersionProperty(key)) {
                             return;
                         }
                         String spoofedValue = ConfigManager.getSystemProperty(key, null);

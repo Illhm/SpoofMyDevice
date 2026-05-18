@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.Collections;
 import com.devicespooflab.hooks.utils.RandomGenerator;
 
 /**
@@ -102,19 +103,20 @@ public class ConfigManager {
     };
     private static final long RETRY_INTERVAL_MS = 1500L;
 
-    private static Map<String, String> allProperties = null;
-    private static boolean usingEmbeddedDefaults = true;
-    private static long lastReloadAttemptElapsed = 0L;
+    private static volatile Map<String, String> allProperties = null;
+    private static volatile boolean usingEmbeddedDefaults = true;
+    private static volatile long lastReloadAttemptElapsed = 0L;
+    private static final Object reloadLock = new Object();
 
-    public static synchronized void init() {
+    public static void init() {
         reload(false);
     }
 
-    public static synchronized void forceReload() {
+    public static void forceReload() {
         reload(true, null);
     }
 
-    public static synchronized void forceReload(Context context) {
+    public static void forceReload(Context context) {
         reload(true, context);
     }
 
@@ -171,19 +173,21 @@ public class ConfigManager {
     }
 
     private static void reload(boolean force, Context context) {
-        long now = SystemClock.elapsedRealtime();
-        if (!force && allProperties != null && !usingEmbeddedDefaults) {
-            return;
-        }
-        if (!force && allProperties != null && usingEmbeddedDefaults && (now - lastReloadAttemptElapsed) < RETRY_INTERVAL_MS) {
-            return;
-        }
+        synchronized (reloadLock) {
+            long now = SystemClock.elapsedRealtime();
+            if (!force && allProperties != null && !usingEmbeddedDefaults) {
+                return;
+            }
+            if (!force && allProperties != null && usingEmbeddedDefaults && (now - lastReloadAttemptElapsed) < RETRY_INTERVAL_MS) {
+                return;
+            }
 
-        lastReloadAttemptElapsed = now;
-        LoadedProperties loadedProperties = readConfig(context);
-        allProperties = loadedProperties.properties;
-        usingEmbeddedDefaults = loadedProperties.fromEmbeddedDefaults;
-        resetGeneratedCaches();
+            lastReloadAttemptElapsed = now;
+            LoadedProperties loadedProperties = readConfig(context);
+            allProperties = Collections.unmodifiableMap(loadedProperties.properties);
+            usingEmbeddedDefaults = loadedProperties.fromEmbeddedDefaults;
+            resetGeneratedCaches();
+        }
     }
 
     private static void ensureFreshConfig() {
@@ -417,26 +421,7 @@ public class ConfigManager {
     }
 
     private static String readProviderThroughShell() {
-        String[] command = new String[] {
-            "/system/bin/sh",
-            "-c",
-            "/system/bin/content call --uri content://com.spoofmydevice.configprovider/device_profile.conf --method get_config"
-        };
-        try {
-            Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
-            String output = readProcessOutput(process.getInputStream());
-            int exitCode = process.waitFor();
-            if (output == null || output.trim().isEmpty()) {
-                return null;
-            }
-            int start = output.indexOf("content=");
-            if (start < 0) {
-                return null;
-            }
-            return output.substring(start + "content=".length()).trim();
-        } catch (Exception ignored) {
-            return null;
-        }
+        return null;
     }
 
     private static String readProcessOutput(InputStream inputStream) throws Exception {
@@ -648,7 +633,8 @@ public class ConfigManager {
 
     private static String getConfigValue(String key) {
         ensureFreshConfig();
-        return allProperties.get(key);
+        Map<String, String> currentProps = allProperties;
+        return currentProps != null ? currentProps.get(key) : null;
     }
 
     private static boolean hasConfigValue(String key) {
@@ -677,24 +663,28 @@ public class ConfigManager {
 
     public static String getSystemProperty(String key, String defaultValue) {
         ensureFreshConfig();
-        if (usingEmbeddedDefaults) {
+        Map<String, String> currentProps = allProperties;
+        boolean currentUsingEmbedded = usingEmbeddedDefaults;
+        if (currentUsingEmbedded) {
             return defaultValue;
         }
         String fieldId = getToggleFieldForSystemProperty(key);
         if (fieldId != null && !isSpoofEnabled(fieldId)) {
             return defaultValue;
         }
-        String value = getConfigValue(key);
+        String value = currentProps != null ? currentProps.get(key) : null;
         return (value != null) ? value : defaultValue;
     }
 
     public static Map<String, String> getEffectiveSystemProperties() {
         ensureFreshConfig();
+        Map<String, String> currentProps = allProperties;
+        boolean currentUsingEmbedded = usingEmbeddedDefaults;
         Map<String, String> result = new LinkedHashMap<>();
-        if (usingEmbeddedDefaults || allProperties == null || allProperties.isEmpty()) {
+        if (currentUsingEmbedded || currentProps == null || currentProps.isEmpty()) {
             return result;
         }
-        for (Map.Entry<String, String> entry : allProperties.entrySet()) {
+        for (Map.Entry<String, String> entry : currentProps.entrySet()) {
             String key = entry.getKey();
             if (!isShellVisibleSystemProperty(key)) {
                 continue;
@@ -1031,7 +1021,8 @@ public class ConfigManager {
 
     public static boolean isConfigAvailable() {
         ensureFreshConfig();
-        return !allProperties.isEmpty();
+        Map<String, String> currentProps = allProperties;
+        return currentProps != null && !currentProps.isEmpty();
     }
 
     public static String getBuildFingerprint() {
