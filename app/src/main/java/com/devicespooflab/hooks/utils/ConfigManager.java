@@ -1091,7 +1091,7 @@ public class ConfigManager {
     }
 
     public static int getBuildVersionSdk() {
-        return parseInt(getConfigValue("ro.build.version.sdk"), 35);
+        return parseInt(getConfigValue("ro.build.version.sdk"), 36);
     }
 
     public static String getBuildVersionSecurityPatch() {

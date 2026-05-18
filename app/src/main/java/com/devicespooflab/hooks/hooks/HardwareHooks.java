@@ -33,6 +33,8 @@ public class HardwareHooks {
     private static final long PIXEL_7_PRO_RAM_BYTES = 12L * 1024 * 1024 * 1024; // 12GB
     private static final long PIXEL_7_PRO_RAM_KB = 12L * 1024 * 1024; // 12GB in KB
 
+    private static final ThreadLocal<Boolean> isHooking = new ThreadLocal<>();
+
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             hookRuntimeCores();
@@ -89,7 +91,7 @@ public class HardwareHooks {
                             if (originalTotal > 0) {
                                 double usedRatio = 1.0 - ((double) memInfo.availMem / originalTotal);
                                 memInfo.availMem = (long) (PIXEL_7_PRO_RAM_BYTES * (1.0 - usedRatio));
-                            }
+                                    }
                         }
                     }
                 });
@@ -149,10 +151,18 @@ public class HardwareHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        BufferedReader reader = (BufferedReader) param.thisObject;
-                        // Check if reading from FileReader
-                        if (param.args[0] instanceof FileReader) {
-                            // We'll intercept readLine() calls instead
+                        if (Boolean.TRUE.equals(isHooking.get())) {
+                            return;
+                        }
+                        isHooking.set(true);
+                        try {
+                                BufferedReader reader = (BufferedReader) param.thisObject;
+                                // Check if reading from FileReader
+                                if (param.args[0] instanceof FileReader) {
+                                    // We'll intercept readLine() calls instead
+                                    }
+                        } finally {
+                            isHooking.remove();
                         }
                     }
                 });
@@ -166,12 +176,20 @@ public class HardwareHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        String line = (String) param.getResult();
-                        if (line != null) {
-                            // Spoof MemTotal in /proc/meminfo
-                            if (line.startsWith("MemTotal:")) {
-                                param.setResult("MemTotal:       " + PIXEL_7_PRO_RAM_KB + " kB");
-                            }
+                        if (Boolean.TRUE.equals(isHooking.get())) {
+                            return;
+                        }
+                        isHooking.set(true);
+                        try {
+                                String line = (String) param.getResult();
+                                if (line != null) {
+                                    // Spoof MemTotal in /proc/meminfo
+                                    if (line.startsWith("MemTotal:")) {
+                                        param.setResult("MemTotal:       " + PIXEL_7_PRO_RAM_KB + " kB");
+                                    }
+                                    }
+                        } finally {
+                            isHooking.remove();
                         }
                     }
                 });
@@ -185,12 +203,20 @@ public class HardwareHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        File file = (File) param.thisObject;
-                        String path = file.getAbsolutePath();
+                        if (Boolean.TRUE.equals(isHooking.get())) {
+                            return;
+                        }
+                        isHooking.set(true);
+                        try {
+                                File file = (File) param.thisObject;
+                                String path = file.getAbsolutePath();
 
-                        // Ensure /proc/cpuinfo exists (some apps check this)
-                        if (path.equals("/proc/cpuinfo") || path.equals("/proc/meminfo")) {
-                            // Let it pass through normally
+                                // Ensure /proc/cpuinfo exists (some apps check this)
+                                if (path.equals("/proc/cpuinfo") || path.equals("/proc/meminfo")) {
+                                    // Let it pass through normally
+                                    }
+                        } finally {
+                            isHooking.remove();
                         }
                     }
                 });

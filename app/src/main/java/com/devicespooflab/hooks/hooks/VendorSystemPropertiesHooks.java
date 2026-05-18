@@ -18,6 +18,8 @@ public final class VendorSystemPropertiesHooks {
         "com.samsung.android.os.SemSystemProperties"
     };
 
+    private static final ThreadLocal<Boolean> isHooking = new ThreadLocal<>();
+
     private VendorSystemPropertiesHooks() {
     }
 
@@ -47,11 +49,19 @@ public final class VendorSystemPropertiesHooks {
         args[parameterTypes.length] = new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) {
-                String key = (String) param.args[0];
-                String spoofedValue = ConfigManager.getSystemProperty(key, null);
-                if (spoofedValue != null) {
-                    param.setResult(spoofedValue);
-                }
+                if (Boolean.TRUE.equals(isHooking.get())) {
+                    return;
+                    }
+                isHooking.set(true);
+                try {
+                    String key = (String) param.args[0];
+                    String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                    if (spoofedValue != null) {
+                        param.setResult(spoofedValue);
+                    }
+                    } finally {
+                    isHooking.remove();
+                    }
             }
         };
 
@@ -69,17 +79,25 @@ public final class VendorSystemPropertiesHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
-                        String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
-                        if (spoofedValue == null) {
-                            return;
-                        }
-                        try {
-                            param.setResult(Integer.parseInt(spoofedValue));
-                        } catch (NumberFormatException ignored) {
-                        }
+                        if (Boolean.TRUE.equals(isHooking.get())) {
+                                return;
+                            }
+                        isHooking.set(true);
+                            try {
+                            String key = (String) param.args[0];
+                            String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                            if (spoofedValue == null) {
+                                return;
+                            }
+                            try {
+                                param.setResult(Integer.parseInt(spoofedValue));
+                            } catch (NumberFormatException ignored) {
+                            }
+                            } finally {
+                            isHooking.remove();
+                            }
                     }
-                });
+                    });
         } catch (Throwable ignored) {
         }
     }
@@ -91,17 +109,25 @@ public final class VendorSystemPropertiesHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
-                        String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
-                        if (spoofedValue == null) {
-                            return;
-                        }
-                        try {
-                            param.setResult(Long.parseLong(spoofedValue));
-                        } catch (NumberFormatException ignored) {
-                        }
+                        if (Boolean.TRUE.equals(isHooking.get())) {
+                                return;
+                            }
+                        isHooking.set(true);
+                            try {
+                            String key = (String) param.args[0];
+                            String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                            if (spoofedValue == null) {
+                                return;
+                            }
+                            try {
+                                param.setResult(Long.parseLong(spoofedValue));
+                            } catch (NumberFormatException ignored) {
+                            }
+                            } finally {
+                            isHooking.remove();
+                            }
                     }
-                });
+                    });
         } catch (Throwable ignored) {
         }
     }
@@ -113,14 +139,22 @@ public final class VendorSystemPropertiesHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
-                        String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
-                        if (spoofedValue == null) {
-                            return;
-                        }
-                        param.setResult("1".equals(spoofedValue) || "true".equalsIgnoreCase(spoofedValue));
+                        if (Boolean.TRUE.equals(isHooking.get())) {
+                                return;
+                            }
+                        isHooking.set(true);
+                            try {
+                            String key = (String) param.args[0];
+                            String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                            if (spoofedValue == null) {
+                                return;
+                            }
+                            param.setResult("1".equals(spoofedValue) || "true".equalsIgnoreCase(spoofedValue));
+                            } finally {
+                            isHooking.remove();
+                            }
                     }
-                });
+                    });
         } catch (Throwable ignored) {
         }
     }
