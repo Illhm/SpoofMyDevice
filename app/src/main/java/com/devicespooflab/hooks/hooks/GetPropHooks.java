@@ -171,11 +171,21 @@ public final class GetPropHooks {
 
     private static Process buildReplacementProcess(Process originalProcess, GetPropRequest request) {
         if (request.fullDump) {
+            final String[] originalStderr = new String[1];
+            Thread stderrThread = new Thread(() -> {
+                originalStderr[0] = readStream(originalProcess.getErrorStream());
+            });
+            stderrThread.start();
+
             String originalStdout = readStream(originalProcess.getInputStream());
-            String originalStderr = readStream(originalProcess.getErrorStream());
+            try {
+                stderrThread.join();
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
             int exitCode = waitForExit(originalProcess);
             String rewritten = rewriteGetPropDump(originalStdout);
-            return new SimpleProcess(rewritten, originalStderr, exitCode);
+            return new SimpleProcess(rewritten, originalStderr[0], exitCode);
         }
 
         String key = request.propertyKey;
@@ -188,10 +198,20 @@ public final class GetPropHooks {
             return null;
         }
 
+        final String[] originalStderr = new String[1];
+        Thread stderrThread = new Thread(() -> {
+            originalStderr[0] = readStream(originalProcess.getErrorStream());
+        });
+        stderrThread.start();
+
         readStream(originalProcess.getInputStream());
-        String originalStderr = readStream(originalProcess.getErrorStream());
+        try {
+            stderrThread.join();
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
         int exitCode = waitForExit(originalProcess);
-        return new SimpleProcess(spoofedValue + "\n", originalStderr, exitCode);
+        return new SimpleProcess(spoofedValue + "\n", originalStderr[0], exitCode);
     }
 
     private static String rewriteGetPropDump(String stdout) {

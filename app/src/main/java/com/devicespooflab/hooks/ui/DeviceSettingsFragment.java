@@ -602,6 +602,7 @@ public class DeviceSettingsFragment extends Fragment {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private String resolveCurrentImei() {
         try {
             TelephonyManager telephonyManager = requireContext().getSystemService(TelephonyManager.class);
@@ -617,6 +618,7 @@ public class DeviceSettingsFragment extends Fragment {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private String resolveCurrentMeid() {
         try {
             TelephonyManager telephonyManager = requireContext().getSystemService(TelephonyManager.class);
@@ -629,6 +631,7 @@ public class DeviceSettingsFragment extends Fragment {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private String resolveCurrentImsi() {
         try {
             TelephonyManager telephonyManager = requireContext().getSystemService(TelephonyManager.class);
@@ -641,6 +644,7 @@ public class DeviceSettingsFragment extends Fragment {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private String resolveCurrentIccid() {
         try {
             SubscriptionManager subscriptionManager = requireContext().getSystemService(SubscriptionManager.class);
@@ -658,6 +662,7 @@ public class DeviceSettingsFragment extends Fragment {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private String resolveCurrentPhoneNumber() {
         try {
             TelephonyManager telephonyManager = requireContext().getSystemService(TelephonyManager.class);

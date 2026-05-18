@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import com.devicespooflab.hooks.utils.RandomGenerator;
@@ -102,28 +103,30 @@ public class ConfigManager {
     };
     private static final long RETRY_INTERVAL_MS = 1500L;
 
-    private static Map<String, String> allProperties = null;
-    private static boolean usingEmbeddedDefaults = true;
+    private static volatile Map<String, String> allProperties = null;
+    private static volatile boolean usingEmbeddedDefaults = true;
     private static long lastReloadAttemptElapsed = 0L;
 
-    public static synchronized void init() {
+    private static final ConcurrentHashMap<String, String> toggleFieldCache = new ConcurrentHashMap<>();
+
+    public static void init() {
         reload(false);
     }
 
-    public static synchronized void forceReload() {
+    public static void forceReload() {
         reload(true, null);
     }
 
-    public static synchronized void forceReload(Context context) {
+    public static void forceReload(Context context) {
         reload(true, context);
     }
 
-    public static synchronized void randomizeAll(Context context) {
+    public static void randomizeAll(Context context) {
         Map<String, String> generatedProperties = RandomGenerator.generateBatchRandomization();
         updateConfig(context, generatedProperties);
     }
 
-    public static synchronized void updateConfig(Context context, Map<String, String> updates) {
+    public static void updateConfig(Context context, Map<String, String> updates) {
         ensureFreshConfig();
 
         Map<String, String> merged = new LinkedHashMap<>();
@@ -161,7 +164,7 @@ public class ConfigManager {
         }
     }
 
-    public static synchronized boolean isUsingEmbeddedDefaults() {
+    public static boolean isUsingEmbeddedDefaults() {
         ensureFreshConfig();
         return usingEmbeddedDefaults;
     }
@@ -170,7 +173,7 @@ public class ConfigManager {
         reload(force, null);
     }
 
-    private static void reload(boolean force, Context context) {
+    private static synchronized void reload(boolean force, Context context) {
         long now = SystemClock.elapsedRealtime();
         if (!force && allProperties != null && !usingEmbeddedDefaults) {
             return;
@@ -188,7 +191,11 @@ public class ConfigManager {
 
     private static void ensureFreshConfig() {
         if (allProperties == null || usingEmbeddedDefaults) {
-            reload(false);
+            synchronized (ConfigManager.class) {
+                if (allProperties == null || usingEmbeddedDefaults) {
+                    reload(false);
+                }
+            }
         }
     }
 
@@ -857,6 +864,10 @@ public class ConfigManager {
         if (key == null || key.isEmpty()) {
             return null;
         }
+        return toggleFieldCache.computeIfAbsent(key, ConfigManager::computeToggleFieldForSystemProperty);
+    }
+
+    private static String computeToggleFieldForSystemProperty(String key) {
         if (key.equals("ro.product.brand") || key.endsWith(".brand")) {
             return FIELD_BRAND;
         }

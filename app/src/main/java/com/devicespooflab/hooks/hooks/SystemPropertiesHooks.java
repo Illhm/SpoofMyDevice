@@ -7,6 +7,8 @@ import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Hooks android.os.SystemProperties to intercept ALL system property reads.
  * This is the CRITICAL hook that solves the Zygote bypass problem.
@@ -20,6 +22,8 @@ public class SystemPropertiesHooks {
 
     private static final String TAG = "DeviceSpoofLab-SystemProps";
     private static final String SYSTEM_PROPERTIES_CLASS = "android.os.SystemProperties";
+
+    private static final ConcurrentHashMap<String, Boolean> versionPropertyCache = new ConcurrentHashMap<>();
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
@@ -177,8 +181,10 @@ public class SystemPropertiesHooks {
         if (key == null) {
             return false;
         }
-        return key.startsWith("ro.build.version.")
-            || key.startsWith("ro.product.build.version.")
-            || key.contains(".build.version.");
+        return versionPropertyCache.computeIfAbsent(key, k ->
+            k.startsWith("ro.build.version.")
+            || k.startsWith("ro.product.build.version.")
+            || k.contains(".build.version.")
+        );
     }
 }
