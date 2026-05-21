@@ -19,6 +19,7 @@ public class AppSetIdHooks {
 
     private static final String TAG = "DeviceSpoofLab-AppSetId";
     private static final int MIN_SDK = 30; // Android 11
+    private static final int FALLBACK_SCOPE_APP = 1;
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         // Only hook on Android 11+ (SDK 30+)
@@ -66,12 +67,20 @@ public class AppSetIdHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         if (ConfigManager.getAppSetId() != null) {
-                            param.setResult(1); // APP scope
+                            param.setResult(resolveScopeAppConstant(appSetIdInfoClass));
                         }
                     }
                 });
         } catch (Exception e) {
             XposedBridge.log(TAG + ": Failed to hook getScope(): " + e.getMessage());
+        }
+    }
+
+    private static int resolveScopeAppConstant(Class<?> appSetIdInfoClass) {
+        try {
+            return XposedHelpers.getStaticIntField(appSetIdInfoClass, "SCOPE_APP");
+        } catch (Throwable ignored) {
+            return FALLBACK_SCOPE_APP;
         }
     }
 }

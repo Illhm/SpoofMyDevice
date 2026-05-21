@@ -1,7 +1,5 @@
 package com.devicespooflab.hooks.hooks;
 
-import android.content.Context;
-
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -77,9 +75,7 @@ public class WebViewHooks {
         }
 
         try {
-            // Hook WebView(Context) constructor
-            XposedHelpers.findAndHookConstructor(webViewClass,
-                Context.class,
+            XposedBridge.hookAllConstructors(webViewClass,
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
@@ -97,55 +93,7 @@ public class WebViewHooks {
                     }
                 });
         } catch (Exception e) {
-            XposedBridge.log(TAG + ": Failed to hook WebView constructor: " + e.getMessage());
-        }
-
-        try {
-            // Hook WebView(Context, AttributeSet) constructor
-            XposedHelpers.findAndHookConstructor(webViewClass,
-                Context.class, android.util.AttributeSet.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        try {
-                            Object webView = param.thisObject;
-                            Object settings = XposedHelpers.callMethod(webView, "getSettings");
-
-                            String spoofedUA = ConfigManager.getWebViewUserAgent();
-                            if (spoofedUA != null) {
-                                XposedHelpers.callMethod(settings, "setUserAgentString", spoofedUA);
-                            }
-                        } catch (Exception e) {
-                            // Failed to set UA in constructor, that's okay
-                        }
-                    }
-                });
-        } catch (Exception e) {
-            XposedBridge.log(TAG + ": Failed to hook WebView(Context, AttributeSet) constructor: " + e.getMessage());
-        }
-
-        try {
-            // Hook WebView(Context, AttributeSet, int) constructor
-            XposedHelpers.findAndHookConstructor(webViewClass,
-                Context.class, android.util.AttributeSet.class, int.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        try {
-                            Object webView = param.thisObject;
-                            Object settings = XposedHelpers.callMethod(webView, "getSettings");
-
-                            String spoofedUA = ConfigManager.getWebViewUserAgent();
-                            if (spoofedUA != null) {
-                                XposedHelpers.callMethod(settings, "setUserAgentString", spoofedUA);
-                            }
-                        } catch (Exception e) {
-                            // Failed to set UA in constructor, that's okay
-                        }
-                    }
-                });
-        } catch (Exception e) {
-            XposedBridge.log(TAG + ": Failed to hook WebView(Context, AttributeSet, int) constructor: " + e.getMessage());
+            XposedBridge.log(TAG + ": Failed to hook WebView constructors: " + e.getMessage());
         }
     }
 }

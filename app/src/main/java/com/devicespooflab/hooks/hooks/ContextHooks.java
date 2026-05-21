@@ -1,8 +1,6 @@
 package com.devicespooflab.hooks.hooks;
 
 import android.os.Build;
-import android.content.Context;
-
 import java.lang.reflect.Method;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -42,22 +40,35 @@ public class ContextHooks {
                             return;
                         }
 
-                        // The flags parameter is typically the last int parameter or second to last
-                        // In registerReceiver/registerReceiverInternal, signature includes int flags
-                        for (int i = args.length - 1; i >= 0; i--) {
-                            if (args[i] instanceof Integer) {
-                                int flags = (Integer) args[i];
+                        if (!(param.method instanceof Method)) {
+                            return;
+                        }
 
-                                // Only modify if it's likely a flags argument (not 0, not some other unrelated int like userId)
-                                // Actually, flags can be 0. So we just check the first int we find from the right.
-                                // In Android source, registerReceiverInternal signature often looks like:
-                                // registerReceiverInternal(BroadcastReceiver receiver, int userId, IntentFilter filter, String broadcastPermission, Handler scheduler, Context context, int flags)
-                                // We check if neither export flag is present
-                                if ((flags & RECEIVER_EXPORTED) == 0 && (flags & RECEIVER_NOT_EXPORTED) == 0) {
-                                    param.args[i] = flags | RECEIVER_EXPORTED;
-                                }
+                        Method method = (Method) param.method;
+                        Class<?>[] parameterTypes = method.getParameterTypes();
+                        if (parameterTypes.length == 0) {
+                            return;
+                        }
+
+                        int lastArgIndex = parameterTypes.length - 1;
+                        if (parameterTypes[lastArgIndex] != Integer.TYPE || !(args[lastArgIndex] instanceof Integer)) {
+                            return;
+                        }
+
+                        boolean hasIntentFilter = false;
+                        for (Class<?> parameterType : parameterTypes) {
+                            if ("android.content.IntentFilter".equals(parameterType.getName())) {
+                                hasIntentFilter = true;
                                 break;
                             }
+                        }
+                        if (!hasIntentFilter) {
+                            return;
+                        }
+
+                        int flags = (Integer) args[lastArgIndex];
+                        if ((flags & RECEIVER_EXPORTED) == 0 && (flags & RECEIVER_NOT_EXPORTED) == 0) {
+                            param.args[lastArgIndex] = flags | RECEIVER_EXPORTED;
                         }
                     }
                 };
