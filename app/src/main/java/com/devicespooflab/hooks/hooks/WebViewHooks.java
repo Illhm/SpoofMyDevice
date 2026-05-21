@@ -18,8 +18,16 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public class WebViewHooks {
 
     private static final String TAG = "DeviceSpoofLab-WebView";
+    private static final String DEVCHECK_PACKAGE = "flar2.devcheck";
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
+        // DevCheck uses native anti-tamper library (pairipcore). Broad constructor hooks can
+        // increase startup instability on some ROM/bridge combinations; keep this package stable.
+        if (DEVCHECK_PACKAGE.equals(lpparam.packageName)) {
+            XposedBridge.log(TAG + ": Skipping WebView hooks for " + lpparam.packageName + " (stability guard)");
+            return;
+        }
+
         try {
             hookWebSettings(lpparam);
             hookWebViewConstructor(lpparam);
@@ -48,9 +56,6 @@ public class WebViewHooks {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         Object settings = param.getResult();
                         if (settings != null) {
-                            // Hook getUserAgentString() on the actual implementation class
-                            Class<?> settingsClass = settings.getClass();
-
                             // Set spoofed UA immediately
                             String spoofedUA = ConfigManager.getWebViewUserAgent();
                             if (spoofedUA != null) {
@@ -97,7 +102,7 @@ public class WebViewHooks {
                     }
                 });
         } catch (Exception e) {
-            XposedBridge.log(TAG + ": Failed to hook WebView constructor: " + e.getMessage());
+            XposedBridge.log(TAG + ": Failed to hook WebView(Context) constructor: " + e.getMessage());
         }
 
         try {
