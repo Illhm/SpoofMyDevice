@@ -203,7 +203,7 @@ public class DeviceSettingsFragment extends Fragment {
             }
         });
 
-        binding.buttonAdvancedRandomAll.setOnClickListener(v -> randomAdvancedFields());
+        binding.buttonAdvancedRandomAll.setOnClickListener(v -> randomizeAllIdentityFields());
         binding.buttonAdvancedClearAll.setOnClickListener(v -> clearAdvancedFields());
 
         binding.layoutAdvancedImei.setEndIconOnClickListener(v ->
@@ -372,6 +372,47 @@ public class DeviceSettingsFragment extends Fragment {
             }
         }
         return extraProperties;
+    }
+
+    private void randomizeAllIdentityFields() {
+        DevicePreset randomPreset = null;
+        if (!presets.isEmpty()) {
+            randomPreset = presets.get(new java.security.SecureRandom().nextInt(presets.size()));
+        }
+
+        if (randomPreset != null && randomPreset.getProfile() != null) {
+            DeviceProfile profile = randomPreset.getProfile();
+            setText(binding.inputBrand, profile.getBrand());
+            setText(binding.inputManufacturer, profile.getManufacturer());
+            setText(binding.inputModel, profile.getModel());
+            setText(binding.inputDevice, profile.getDeviceCode());
+            setText(binding.inputProduct, profile.getProductName());
+            setText(binding.inputBoard, profile.getBoard());
+            setText(binding.inputHardware, profile.getHardware());
+            setText(binding.inputBoardPlatform, profile.getBoardPlatform());
+            setText(binding.inputScreenWidth, String.valueOf(profile.getScreenWidth()));
+            setText(binding.inputScreenHeight, String.valueOf(profile.getScreenHeight()));
+            setText(binding.inputScreenDensity, String.valueOf(profile.getScreenDensity()));
+        }
+
+        String buildId = RandomGenerator.generateBuildId();
+        String buildIncremental = RandomGenerator.generateIncremental();
+        String release = text(binding.inputAndroidRelease).isEmpty() ? "16" : text(binding.inputAndroidRelease);
+        String brand = text(binding.inputBrand).isEmpty() ? "samsung" : text(binding.inputBrand);
+        String product = text(binding.inputProduct).isEmpty() ? "device" : text(binding.inputProduct);
+        String device = text(binding.inputDevice).isEmpty() ? product : text(binding.inputDevice);
+
+        setText(binding.inputAndroidRelease, release);
+        setText(binding.inputSdk, "36");
+        setText(binding.inputSecurityPatch, RandomGenerator.generateSecurityPatch());
+        setText(binding.inputBuildId, buildId);
+        setText(binding.inputBuildIncremental, buildIncremental);
+        setText(binding.inputFingerprint,
+            brand + "/" + product + "/" + device + ":" + release + "/" + buildId + "/" + buildIncremental + ":user/release-keys"
+        );
+
+        randomAdvancedFields();
+        applyMode(true, false);
     }
 
     private void randomAdvancedFields() {
