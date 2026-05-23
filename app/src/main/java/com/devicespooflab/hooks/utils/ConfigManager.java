@@ -367,6 +367,9 @@ public class ConfigManager {
 
     private static Map<String, String> readFromReadableMirrorFile(Context preferredContext) {
         File mirrorFile = new File("/data/user/0/com.spoofmydevice/shared_prefs/" + ConfigFileManager.MIRROR_PREFS_NAME + ".xml");
+        if (!mirrorFile.exists()) {
+            mirrorFile = new File("/data/data/com.spoofmydevice/shared_prefs/" + ConfigFileManager.MIRROR_PREFS_NAME + ".xml");
+        }
         try {
             if (!mirrorFile.exists() || !mirrorFile.canRead()) {
                 debugLog(preferredContext, "readable mirror unavailable exists=" + mirrorFile.exists() + " canRead=" + mirrorFile.canRead());
@@ -390,7 +393,10 @@ public class ConfigManager {
                 .replace("&gt;", ">")
                 .replace("&quot;", "\"")
                 .replace("&apos;", "'")
-                .replace("&amp;", "&");
+                .replace("&amp;", "&")
+                .replace("&#10;", "\n")
+                .replace("&#13;", "\r")
+                .replace("\\n", "\n");
             InputStream stream = new java.io.ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
             return parseConfigStream(stream);
         } catch (Exception exception) {
@@ -410,6 +416,16 @@ public class ConfigManager {
                 return parseConfigStream(stream);
             }
         } catch (Throwable exception) {
+        }
+        try {
+            XSharedPreferences preferences = new XSharedPreferences("com.spoofmydevice", ConfigFileManager.MIRROR_PREFS_NAME);
+            preferences.reload();
+            String content = preferences.getString(ConfigFileManager.MIRROR_PREFS_KEY_CONTENT, null);
+            if (content != null && !content.trim().isEmpty()) {
+                InputStream stream = new java.io.ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+                return parseConfigStream(stream);
+            }
+        } catch (Throwable ignored) {
         }
         return new HashMap<>();
     }
