@@ -13,10 +13,15 @@ public class ConfigBridgeReceiver extends BroadcastReceiver {
 
     public static final String ACTION_GET_CONFIG = "com.spoofmydevice.action.GET_CONFIG";
     public static final String EXTRA_CONTENT = "content";
+    public static final String EXTRA_TOKEN = "token";
 
     @Override
     public void onReceive(Context context, Intent intent) {
         if (context == null || intent == null || !ACTION_GET_CONFIG.equals(intent.getAction())) {
+            return;
+        }
+        String token = intent.getStringExtra(EXTRA_TOKEN);
+        if (!"spoofmydevice-bridge-v1".equals(token)) {
             return;
         }
         try {

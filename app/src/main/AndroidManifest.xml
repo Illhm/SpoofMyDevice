@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <permission
+        android:name="com.spoofmydevice.permission.CONFIG_BRIDGE"
+        android:protectionLevel="signature" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
@@ -39,11 +43,13 @@
             android:name=".ConfigProvider"
             android:authorities="com.spoofmydevice.configprovider"
             android:exported="true"
-            android:grantUriPermissions="true" />
+            android:grantUriPermissions="true"
+            android:readPermission="com.spoofmydevice.permission.CONFIG_BRIDGE" />
 
         <receiver
             android:name=".ConfigBridgeReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="com.spoofmydevice.permission.CONFIG_BRIDGE">
             <intent-filter>
                 <action android:name="com.spoofmydevice.action.GET_CONFIG" />
             </intent-filter>

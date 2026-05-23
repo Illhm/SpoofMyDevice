@@ -319,9 +319,10 @@ public class ConfigManager {
 
             Intent intent = new Intent(ConfigBridgeReceiver.ACTION_GET_CONFIG);
             intent.setClassName("com.spoofmydevice", "com.devicespooflab.hooks.ConfigBridgeReceiver");
+            intent.putExtra(ConfigBridgeReceiver.EXTRA_TOKEN, "spoofmydevice-bridge-v1");
             context.sendOrderedBroadcast(
                 intent,
-                null,
+                "com.spoofmydevice.permission.CONFIG_BRIDGE",
                 resultReceiver,
                 handler,
                 0,
@@ -1178,4 +1179,3 @@ public class ConfigManager {
         }
     }
 }
-

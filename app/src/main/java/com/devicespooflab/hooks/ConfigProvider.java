@@ -2,6 +2,7 @@ package com.devicespooflab.hooks;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.database.Cursor;
 import android.database.MatrixCursor;
@@ -32,6 +33,7 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode) throws FileNotFoundException {
+        enforceCaller();
         if (getContext() == null || !FILE_NAME.equals(uri.getLastPathSegment())) {
             throw new FileNotFoundException("Unknown config uri: " + uri);
         }
@@ -53,6 +55,7 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public Cursor query(@NonNull Uri uri, @Nullable String[] projection, @Nullable String selection, @Nullable String[] selectionArgs, @Nullable String sortOrder) {
+        enforceCaller();
         String content = readConfigContent();
         if (content == null) {
             return null;
@@ -65,6 +68,7 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public Bundle call(@NonNull String method, @Nullable String arg, @Nullable Bundle extras) {
+        enforceCaller();
         if (!METHOD_GET_CONFIG.equals(method)) {
             return super.call(method, arg, extras);
         }
@@ -113,6 +117,16 @@ public class ConfigProvider extends ContentProvider {
             return new String(bytes, 0, read, StandardCharsets.UTF_8);
         } catch (Exception ignored) {
             return null;
+        }
+    }
+
+    private void enforceCaller() throws SecurityException {
+        if (getContext() == null) {
+            throw new SecurityException("Missing context");
+        }
+        int check = getContext().checkCallingOrSelfPermission("com.spoofmydevice.permission.CONFIG_BRIDGE");
+        if (check != PackageManager.PERMISSION_GRANTED) {
+            throw new SecurityException("Caller missing CONFIG_BRIDGE permission");
         }
     }
 }

@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace = "com.devicespooflab.hooks"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.spoofmydevice"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 7
         versionName = "1.4"
     }
