@@ -2,126 +2,53 @@ package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
 
+import java.util.Locale;
+
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-/**
- * Hooks OEM system-property wrappers such as Samsung's SemSystemProperties.
- */
 public final class VendorSystemPropertiesHooks {
+    private static final String[] CLASSES = {"android.os.SemSystemProperties", "com.samsung.android.os.SemSystemProperties"};
 
-    private static final String TAG = "SpoofMyDevice-VendorProps";
-    private static final String[] CANDIDATE_CLASSES = {
-        "android.os.SemSystemProperties",
-        "com.samsung.android.os.SemSystemProperties"
-    };
-
-    private VendorSystemPropertiesHooks() {
-    }
+    private VendorSystemPropertiesHooks() {}
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
-        for (String className : CANDIDATE_CLASSES) {
-            hookClass(className, lpparam.classLoader);
-            hookClass(className, null);
+        String m = ConfigManager.getBuildManufacturer();
+        if (m == null || !m.toLowerCase(Locale.US).contains("samsung")) return;
+        HookValueResolver resolver = HookValueResolver.forPackage(lpparam.packageName);
+        for (String n : CLASSES) {
+            hookClass(XposedHelpers.findClassIfExists(n, lpparam.classLoader), resolver);
+            hookClass(XposedHelpers.findClassIfExists(n, null), resolver);
         }
     }
 
-    private static void hookClass(String className, ClassLoader classLoader) {
-        Class<?> clazz = XposedHelpers.findClassIfExists(className, classLoader);
-        if (clazz == null) {
-            return;
-        }
-
-        hookStringGetter(clazz, "get", String.class);
-        hookStringGetter(clazz, "get", String.class, String.class);
-        hookIntGetter(clazz);
-        hookLongGetter(clazz);
-        hookBooleanGetter(clazz);
-    }
-
-    private static void hookStringGetter(Class<?> clazz, Object... parameterTypes) {
-        Object[] args = new Object[parameterTypes.length + 1];
-        System.arraycopy(parameterTypes, 0, args, 0, parameterTypes.length);
-        args[parameterTypes.length] = new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) {
-                String key = (String) param.args[0];
-                String spoofedValue = ConfigManager.getSystemProperty(key, null);
-                if (spoofedValue != null) {
-                    param.setResult(spoofedValue);
-                }
-            }
-        };
-
+    private static void hookClass(Class<?> c, HookValueResolver resolver) {
+        if (c == null) return;
+        tryHook(c, "get", new Object[]{String.class}, resolver);
+        tryHook(c, "get", new Object[]{String.class, String.class}, resolver);
         try {
-            XposedHelpers.findAndHookMethod(clazz, "get", args);
-        } catch (Throwable throwable) {
-            XposedBridge.log(TAG + ": Failed to hook " + clazz.getName() + ".get: " + throwable.getMessage());
-        }
+            XposedHelpers.findAndHookMethod(c, "getInt", String.class, int.class, new XC_MethodHook() {
+                protected void afterHookedMethod(MethodHookParam p){ String v=resolver.resolveSystemProperty((String)p.args[0], null); if(v!=null) try{p.setResult(Integer.parseInt(v));}catch(Throwable ignored){}}});
+        } catch (Throwable ignored) {}
+        try {
+            XposedHelpers.findAndHookMethod(c, "getLong", String.class, long.class, new XC_MethodHook() {
+                protected void afterHookedMethod(MethodHookParam p){ String v=resolver.resolveSystemProperty((String)p.args[0], null); if(v!=null) try{p.setResult(Long.parseLong(v));}catch(Throwable ignored){}}});
+        } catch (Throwable ignored) {}
+        try {
+            XposedHelpers.findAndHookMethod(c, "getBoolean", String.class, boolean.class, new XC_MethodHook() {
+                protected void afterHookedMethod(MethodHookParam p){ String v=resolver.resolveSystemProperty((String)p.args[0], null); if(v!=null) p.setResult("1".equals(v)||"true".equalsIgnoreCase(v));}});
+        } catch (Throwable ignored) {}
     }
 
-    private static void hookIntGetter(Class<?> clazz) {
+    private static void tryHook(Class<?> c, String name, Object[] params, HookValueResolver resolver) {
         try {
-            XposedHelpers.findAndHookMethod(clazz, "getInt",
-                String.class, int.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) {
-                        String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
-                        if (spoofedValue == null) {
-                            return;
-                        }
-                        try {
-                            param.setResult(Integer.parseInt(spoofedValue));
-                        } catch (NumberFormatException ignored) {
-                        }
-                    }
-                });
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static void hookLongGetter(Class<?> clazz) {
-        try {
-            XposedHelpers.findAndHookMethod(clazz, "getLong",
-                String.class, long.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) {
-                        String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
-                        if (spoofedValue == null) {
-                            return;
-                        }
-                        try {
-                            param.setResult(Long.parseLong(spoofedValue));
-                        } catch (NumberFormatException ignored) {
-                        }
-                    }
-                });
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static void hookBooleanGetter(Class<?> clazz) {
-        try {
-            XposedHelpers.findAndHookMethod(clazz, "getBoolean",
-                String.class, boolean.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) {
-                        String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
-                        if (spoofedValue == null) {
-                            return;
-                        }
-                        param.setResult("1".equals(spoofedValue) || "true".equalsIgnoreCase(spoofedValue));
-                    }
-                });
-        } catch (Throwable ignored) {
-        }
+            Object[] args = new Object[params.length + 1];
+            System.arraycopy(params, 0, args, 0, params.length);
+            args[params.length] = new XC_MethodHook() {
+                protected void afterHookedMethod(MethodHookParam p) { p.setResult(resolver.resolveSystemProperty((String)p.args[0], (String)p.getResult())); }
+            };
+            XposedHelpers.findAndHookMethod(c, name, args);
+        } catch (Throwable ignored) {}
     }
 }

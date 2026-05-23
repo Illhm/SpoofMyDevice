@@ -19,11 +19,12 @@ public class DisplayHooks {
     private static final String TAG = "DeviceSpoofLab-Display";
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
-        hookResourcesMetrics();
-        hookDisplayMetrics(lpparam);
+        HookValueResolver resolver = HookValueResolver.forPackage(lpparam.packageName);
+        hookResourcesMetrics(resolver);
+        hookDisplayMetrics(lpparam, resolver);
     }
 
-    private static void hookResourcesMetrics() {
+    private static void hookResourcesMetrics(HookValueResolver resolver) {
         try {
             XposedHelpers.findAndHookMethod("android.content.res.Resources", null, "getDisplayMetrics",
                 new XC_MethodHook() {
@@ -31,7 +32,7 @@ public class DisplayHooks {
                     protected void afterHookedMethod(MethodHookParam param) {
                         DisplayMetrics metrics = (DisplayMetrics) param.getResult();
                         if (metrics != null) {
-                            applyMetrics(metrics);
+                            applyMetrics(metrics, resolver);
                         }
                     }
                 });
@@ -46,7 +47,7 @@ public class DisplayHooks {
                     protected void afterHookedMethod(MethodHookParam param) {
                         Configuration configuration = (Configuration) param.getResult();
                         if (configuration != null) {
-                            applyConfiguration(configuration);
+                            applyConfiguration(configuration, resolver);
                         }
                     }
                 });
@@ -55,7 +56,7 @@ public class DisplayHooks {
         }
     }
 
-    private static void hookDisplayMetrics(XC_LoadPackage.LoadPackageParam lpparam) {
+    private static void hookDisplayMetrics(XC_LoadPackage.LoadPackageParam lpparam, HookValueResolver resolver) {
         Class<?> displayClass = XposedHelpers.findClassIfExists("android.view.Display", lpparam.classLoader);
         if (displayClass == null) {
             return;
@@ -68,7 +69,7 @@ public class DisplayHooks {
                     protected void afterHookedMethod(MethodHookParam param) {
                         DisplayMetrics metrics = (DisplayMetrics) param.args[0];
                         if (metrics != null) {
-                            applyMetrics(metrics);
+                            applyMetrics(metrics, resolver);
                         }
                     }
                 });
@@ -82,7 +83,7 @@ public class DisplayHooks {
                     protected void afterHookedMethod(MethodHookParam param) {
                         DisplayMetrics metrics = (DisplayMetrics) param.args[0];
                         if (metrics != null) {
-                            applyMetrics(metrics);
+                            applyMetrics(metrics, resolver);
                         }
                     }
                 });
@@ -96,10 +97,10 @@ public class DisplayHooks {
                     protected void afterHookedMethod(MethodHookParam param) {
                         Point point = (Point) param.args[0];
                         if (point != null && ConfigManager.shouldApplyScreenMetrics()) {
-                            if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
+                            if (resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
                                 point.x = ConfigManager.getScreenWidth();
                             }
-                            if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT)) {
+                            if (resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT)) {
                                 point.y = ConfigManager.getScreenHeight();
                             }
                         }
@@ -115,10 +116,10 @@ public class DisplayHooks {
                     protected void afterHookedMethod(MethodHookParam param) {
                         Point point = (Point) param.args[0];
                         if (point != null && ConfigManager.shouldApplyScreenMetrics()) {
-                            if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
+                            if (resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
                                 point.x = ConfigManager.getScreenWidth();
                             }
-                            if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT)) {
+                            if (resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT)) {
                                 point.y = ConfigManager.getScreenHeight();
                             }
                         }
@@ -128,17 +129,17 @@ public class DisplayHooks {
         }
     }
 
-    private static void applyMetrics(DisplayMetrics metrics) {
+    private static void applyMetrics(DisplayMetrics metrics, HookValueResolver resolver) {
         if (!ConfigManager.shouldApplyScreenMetrics()) {
             return;
         }
-        if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
+        if (resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
             metrics.widthPixels = ConfigManager.getScreenWidth();
         }
-        if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT)) {
+        if (resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT)) {
             metrics.heightPixels = ConfigManager.getScreenHeight();
         }
-        if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_DENSITY)) {
+        if (resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_DENSITY)) {
             metrics.densityDpi = ConfigManager.getScreenDensityDpi();
             metrics.density = ConfigManager.getScreenDensity();
             metrics.scaledDensity = ConfigManager.getScreenDensity();
@@ -147,13 +148,13 @@ public class DisplayHooks {
         }
     }
 
-    private static void applyConfiguration(Configuration configuration) {
+    private static void applyConfiguration(Configuration configuration, HookValueResolver resolver) {
         if (!ConfigManager.shouldApplyScreenMetrics()) {
             return;
         }
-        boolean widthEnabled = ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH);
-        boolean heightEnabled = ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT);
-        boolean densityEnabled = ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_DENSITY);
+        boolean widthEnabled = resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH);
+        boolean heightEnabled = resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT);
+        boolean densityEnabled = resolver.isSpoofEnabled(ConfigManager.FIELD_SCREEN_DENSITY);
 
         if (!widthEnabled && !heightEnabled && !densityEnabled) {
             return;

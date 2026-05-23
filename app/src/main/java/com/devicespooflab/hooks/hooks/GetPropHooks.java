@@ -1,7 +1,5 @@
 package com.devicespooflab.hooks.hooks;
 
-import com.devicespooflab.hooks.utils.ConfigManager;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -12,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -50,7 +47,7 @@ public final class GetPropHooks {
                             return;
                         }
 
-                        Process replacement = buildReplacementProcess(originalProcess, request);
+                        Process replacement = buildReplacementProcess(HookValueResolver.forPackage(lpparam.packageName), originalProcess, request);
                         if (replacement != null) {
                             param.setResult(replacement);
                         }
@@ -95,7 +92,7 @@ public final class GetPropHooks {
                     return;
                 }
 
-                Process replacement = buildReplacementProcess(originalProcess, request);
+                Process replacement = buildReplacementProcess(HookValueResolver.forPackage(null), originalProcess, request);
                 if (replacement != null) {
                     param.setResult(replacement);
                 }
@@ -169,12 +166,12 @@ public final class GetPropHooks {
         return new GetPropRequest(true, null);
     }
 
-    private static Process buildReplacementProcess(Process originalProcess, GetPropRequest request) {
+    private static Process buildReplacementProcess(HookValueResolver resolver, Process originalProcess, GetPropRequest request) {
         if (request.fullDump) {
             String originalStdout = readStream(originalProcess.getInputStream());
             String originalStderr = readStream(originalProcess.getErrorStream());
             int exitCode = waitForExit(originalProcess);
-            String rewritten = rewriteGetPropDump(originalStdout);
+            String rewritten = rewriteGetPropDump(resolver, originalStdout);
             return new SimpleProcess(rewritten, originalStderr, exitCode);
         }
 
@@ -183,7 +180,7 @@ public final class GetPropHooks {
             return null;
         }
 
-        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+        String spoofedValue = resolver.resolveSystemProperty(key, null);
         if (spoofedValue == null) {
             return null;
         }
@@ -194,8 +191,8 @@ public final class GetPropHooks {
         return new SimpleProcess(spoofedValue + "\n", originalStderr, exitCode);
     }
 
-    private static String rewriteGetPropDump(String stdout) {
-        Map<String, String> spoofed = new LinkedHashMap<>(ConfigManager.getEffectiveSystemProperties());
+    private static String rewriteGetPropDump(HookValueResolver resolver, String stdout) {
+        Map<String, String> spoofed = new LinkedHashMap<>(resolver.spoofedSystemProperties());
         if (spoofed.isEmpty()) {
             return stdout;
         }
