@@ -230,6 +230,10 @@ public class DevicePresetCatalog {
             if (item == null) {
                 continue;
             }
+            RemoteSchemaValidator.ValidationResult validationResult = RemoteSchemaValidator.validate(item);
+            if (!validationResult.valid) {
+                continue;
+            }
             JSONObject profileJson = item.optJSONObject("profile");
             if (profileJson == null) {
                 continue;

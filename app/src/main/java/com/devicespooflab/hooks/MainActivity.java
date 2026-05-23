@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.widget.NestedScrollView;
@@ -58,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean tabletNavigation;
     private boolean syncingNavigationSelection;
     private int selectedNavigationItemId = R.id.navigation_home;
+    private OnBackPressedCallback backPressedCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,8 +79,25 @@ public class MainActivity extends AppCompatActivity {
 
         setupFragments(savedInstanceState);
         setupBottomNavigation(savedInstanceState);
+        setupBackDispatcher();
         binding.saveFab.setOnClickListener(view -> saveFromEditor());
         refreshRemotePresets(false);
+    }
+
+    private void setupBackDispatcher() {
+        backPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (selectedNavigationItemId != R.id.navigation_home) {
+                    handleNavigationSelection(R.id.navigation_home);
+                    return;
+                }
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+                setEnabled(true);
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, backPressedCallback);
     }
 
     public List<DevicePreset> getPresets() {
