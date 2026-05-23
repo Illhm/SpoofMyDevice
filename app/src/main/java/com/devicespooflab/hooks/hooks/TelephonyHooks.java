@@ -2,6 +2,8 @@ package com.devicespooflab.hooks.hooks;
 
 import android.telephony.TelephonyManager;
 
+import com.devicespooflab.hooks.data.ActiveProfileManager;
+import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import java.lang.reflect.Constructor;
@@ -27,6 +29,10 @@ public class TelephonyHooks {
     private static final int SYNTHETIC_SIM_SLOT_INDEX = 0;
     private static final Set<Object> SYNTHETIC_SUBSCRIPTION_INFOS =
         Collections.newSetFromMap(new WeakHashMap<>());
+
+    private static DeviceProfile getActiveProfile() {
+        return ActiveProfileManager.getInstance().getActiveProfile();
+    }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         Class<?> telephonyManager = XposedHelpers.findClassIfExists(
@@ -512,7 +518,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            String mccMnc = ConfigManager.getSystemProperty("gsm.operator.numeric", null);
+                            String mccMnc = getActiveProfile() != null ? getActiveProfile().getOperatorNumeric() : "";
                             if (mccMnc != null) {
                                 param.setResult(mccMnc);
                             }
@@ -526,7 +532,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            String operatorName = ConfigManager.getSystemProperty("gsm.operator.alpha", null);
+                            String operatorName = getActiveProfile() != null ? getActiveProfile().getOperatorAlpha() : "";
                             if (operatorName != null) {
                                 param.setResult(operatorName);
                             }
@@ -540,7 +546,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            String simMccMnc = ConfigManager.getSystemProperty("gsm.sim.operator.numeric", null);
+                            String simMccMnc = getActiveProfile() != null ? getActiveProfile().getSimOperatorNumeric() : "";
                             if (simMccMnc != null) {
                                 param.setResult(simMccMnc);
                             }
@@ -554,7 +560,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            String simOperatorName = ConfigManager.getSystemProperty("gsm.sim.operator.alpha", null);
+                            String simOperatorName = getActiveProfile() != null ? getActiveProfile().getSimOperatorAlpha() : "";
                             if (simOperatorName != null) {
                                 param.setResult(simOperatorName);
                             }
@@ -568,7 +574,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            String simCountry = ConfigManager.getSystemProperty("gsm.sim.operator.iso-country", null);
+                            String simCountry = getActiveProfile() != null ? getActiveProfile().getSimCountryIso() : "";
                             if (simCountry != null) {
                                 param.setResult(simCountry);
                             }
@@ -582,7 +588,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            String networkCountry = ConfigManager.getSystemProperty("gsm.operator.iso-country", null);
+                            String networkCountry = getActiveProfile() != null ? getActiveProfile().getSimCountryIso() : "";
                             if (networkCountry != null) {
                                 param.setResult(networkCountry);
                             }
@@ -619,8 +625,8 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = firstNonBlank(
-                                ConfigManager.getBuildDisplay(),
-                                ConfigManager.getBuildVersionIncremental()
+                                getActiveProfile() != null ? getActiveProfile().getBuildDisplayId() : "",
+                                getActiveProfile() != null ? getActiveProfile().getBuildIncremental() : ""
                             );
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
@@ -883,13 +889,13 @@ public class TelephonyHooks {
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getSimSlotIndex", () -> SYNTHETIC_SIM_SLOT_INDEX);
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getCarrierId", () -> 0);
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getDisplayName", () -> firstNonBlank(
-                ConfigManager.getSystemProperty("gsm.sim.operator.alpha", null),
-                ConfigManager.getSystemProperty("gsm.operator.alpha", null),
+                getActiveProfile() != null ? getActiveProfile().getSimOperatorAlpha() : "",
+                getActiveProfile() != null ? getActiveProfile().getOperatorAlpha() : "",
                 "SIM 1"
         ));
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getCarrierName", () -> firstNonBlank(
-                ConfigManager.getSystemProperty("gsm.sim.operator.alpha", null),
-                ConfigManager.getSystemProperty("gsm.operator.alpha", null),
+                getActiveProfile() != null ? getActiveProfile().getSimOperatorAlpha() : "",
+                getActiveProfile() != null ? getActiveProfile().getOperatorAlpha() : "",
                 "Carrier"
         ));
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getNumber", () -> firstNonBlank(ConfigManager.getPhoneNumber(), ""));
@@ -899,7 +905,7 @@ public class TelephonyHooks {
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getMccString", TelephonyHooks::parseMccString);
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getMncString", TelephonyHooks::parseMncString);
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getCountryIso", () -> firstNonBlank(
-                ConfigManager.getSystemProperty("gsm.sim.operator.iso-country", null),
+                getActiveProfile() != null ? getActiveProfile().getSimCountryIso() : "",
                 "us"
         ));
         hookSubscriptionInfoGetter(subscriptionInfoClass, "isEmbedded", () -> false);
@@ -980,8 +986,8 @@ public class TelephonyHooks {
 
     private static String parseMccString() {
         String numeric = firstNonBlank(
-                ConfigManager.getSystemProperty("gsm.sim.operator.numeric", null),
-                ConfigManager.getSystemProperty("gsm.operator.numeric", null),
+                getActiveProfile() != null ? getActiveProfile().getSimOperatorNumeric() : "",
+                getActiveProfile() != null ? getActiveProfile().getOperatorNumeric() : "",
                 "310260"
         );
         if (numeric.length() >= 3) {
@@ -992,8 +998,8 @@ public class TelephonyHooks {
 
     private static String parseMncString() {
         String numeric = firstNonBlank(
-                ConfigManager.getSystemProperty("gsm.sim.operator.numeric", null),
-                ConfigManager.getSystemProperty("gsm.operator.numeric", null),
+                getActiveProfile() != null ? getActiveProfile().getSimOperatorNumeric() : "",
+                getActiveProfile() != null ? getActiveProfile().getOperatorNumeric() : "",
                 "310260"
         );
         if (numeric.length() > 3) {

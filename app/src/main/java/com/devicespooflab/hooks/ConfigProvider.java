@@ -7,6 +7,9 @@ import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
+import android.content.pm.PackageManager;
+import android.os.Binder;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,9 +32,42 @@ public class ConfigProvider extends ContentProvider {
         return true;
     }
 
+    private boolean isCallerAuthorized() {
+        if (getContext() == null) {
+            return false;
+        }
+        int callerUid = Binder.getCallingUid();
+        int myUid = android.os.Process.myUid();
+        if (callerUid == myUid) {
+            return true;
+        }
+
+        int permissionCheck = getContext().checkCallingPermission("com.spoofmydevice.permission.READ_CONFIG");
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            Log.e("SpoofMyDevice", "Caller does not have READ_CONFIG permission. UID: " + callerUid);
+            return false;
+        }
+
+        PackageManager pm = getContext().getPackageManager();
+        String[] packages = pm.getPackagesForUid(callerUid);
+        if (packages != null && packages.length > 0) {
+            for (String pkg : packages) {
+                if (pm.checkSignatures(getContext().getPackageName(), pkg) == PackageManager.SIGNATURE_MATCH) {
+                    return true;
+                }
+            }
+        }
+        Log.e("SpoofMyDevice", "Caller signature does not match. UID: " + callerUid);
+        return false;
+    }
+
     @Nullable
     @Override
     public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode) throws FileNotFoundException {
+        if (!isCallerAuthorized()) {
+            throw new SecurityException("Caller is not authorized to read config.");
+        }
+
         if (getContext() == null || !FILE_NAME.equals(uri.getLastPathSegment())) {
             throw new FileNotFoundException("Unknown config uri: " + uri);
         }
@@ -53,6 +89,9 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public Cursor query(@NonNull Uri uri, @Nullable String[] projection, @Nullable String selection, @Nullable String[] selectionArgs, @Nullable String sortOrder) {
+        if (!isCallerAuthorized()) {
+            return null;
+        }
         String content = readConfigContent();
         if (content == null) {
             return null;
@@ -65,6 +104,9 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public Bundle call(@NonNull String method, @Nullable String arg, @Nullable Bundle extras) {
+        if (!isCallerAuthorized()) {
+            return null;
+        }
         if (!METHOD_GET_CONFIG.equals(method)) {
             return super.call(method, arg, extras);
         }

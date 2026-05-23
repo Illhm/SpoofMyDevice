@@ -1,5 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
+import com.devicespooflab.hooks.data.ActiveProfileManager;
+import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -20,6 +22,13 @@ public class SystemPropertiesHooks {
 
     private static final String TAG = "DeviceSpoofLab-SystemProps";
     private static final String SYSTEM_PROPERTIES_CLASS = "android.os.SystemProperties";
+
+    private static DeviceProfile getActiveProfile() {
+        return ActiveProfileManager.getInstance().getActiveProfile();
+    }
+    private static String getExtraProperty(String key) {
+        return ActiveProfileManager.getInstance().getExtraProperty(key);
+    }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
@@ -60,7 +69,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getMappedSystemProperty(key, null);
 
                         if (spoofedValue != null) {
                             param.setResult(spoofedValue);
@@ -82,7 +91,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getMappedSystemProperty(key, null);
 
                         if (spoofedValue != null) {
                             param.setResult(spoofedValue);
@@ -104,7 +113,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getMappedSystemProperty(key, null);
 
                         if (spoofedValue != null) {
                             try {
@@ -131,7 +140,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getMappedSystemProperty(key, null);
 
                         if (spoofedValue != null) {
                             // Handle both "true"/"false" and "1"/"0"
@@ -156,7 +165,7 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String spoofedValue = getMappedSystemProperty(key, null);
 
                         if (spoofedValue != null) {
                             try {
@@ -180,5 +189,47 @@ public class SystemPropertiesHooks {
         return key.startsWith("ro.build.version.")
             || key.startsWith("ro.product.build.version.")
             || key.contains(".build.version.");
+    }
+
+    public static String getMappedSystemProperty(String key, String def) {
+        DeviceProfile profile = getActiveProfile();
+        if (profile == null) return def;
+
+        switch (key) {
+            case "ro.product.model": return profile.getModel();
+            case "ro.product.brand": return profile.getBrand();
+            case "ro.product.manufacturer": return profile.getManufacturer();
+            case "ro.product.device": return profile.getDeviceCode();
+            case "ro.product.name": return profile.getProductName();
+            case "ro.product.board": return profile.getBoard();
+            case "ro.hardware": return profile.getHardware();
+            case "ro.build.fingerprint": return profile.getBuildFingerprint();
+            case "ro.build.version.release": return profile.getBuildRelease();
+            case "ro.build.version.sdk": return String.valueOf(profile.getBuildSdk());
+            case "ro.build.version.incremental": return profile.getBuildIncremental();
+            case "ro.build.id": return profile.getBuildId();
+            case "ro.build.display.id": return profile.getBuildDisplayId();
+            case "ro.build.type": return "user";
+            case "ro.build.tags": return "release-keys";
+            case "ro.boot.serialno":
+            case "ro.serialno": return profile.getSerialNumber();
+            case "ro.product.cpu.abi": return profile.getCpuAbi();
+            case "ro.product.cpu.abilist": return profile.getCpuAbiList();
+            case "ro.product.cpu.abilist64": return profile.getCpuAbiList64();
+            case "ro.product.cpu.abilist32": return profile.getCpuAbiList32();
+            case "gsm.operator.alpha": return profile.getOperatorAlpha();
+            case "gsm.operator.numeric": return profile.getOperatorNumeric();
+            case "gsm.sim.operator.alpha": return profile.getSimOperatorAlpha();
+            case "gsm.sim.operator.numeric": return profile.getSimOperatorNumeric();
+            case "gsm.sim.operator.iso-country": return profile.getSimCountryIso();
+            case "persist.sys.timezone": return profile.getTimezone();
+            case "ro.bootloader": return profile.getBootloader();
+            case "webview.user_agent": return profile.getUserAgent();
+        }
+
+        String extra = getExtraProperty(key);
+        if (extra != null) return extra;
+
+        return ConfigManager.getSystemProperty(key, def);
     }
 }

@@ -3,6 +3,9 @@ package com.devicespooflab.hooks.hooks;
 import android.app.ActivityManager;
 import android.os.Debug;
 
+import com.devicespooflab.hooks.data.ActiveProfileManager;
+import com.devicespooflab.hooks.data.DeviceHardwareProfile;
+import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import java.io.BufferedReader;
@@ -15,46 +18,35 @@ import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-/**
- * Hooks to spoof hardware specifications (CPU cores, RAM, CPU frequency, etc.)
- * to match real Pixel 7 Pro hardware.
- *
- * Real Pixel 7 Pro specs:
- * - CPU: Google Tensor G2 (8 cores: 2x2.85GHz + 2x2.35GHz + 4x1.80GHz)
- * - RAM: 12GB LPDDR5
- * - Architecture: ARM64-v8a
- */
 public class HardwareHooks {
 
     private static final String TAG = "DeviceSpoofLab-Hardware";
 
-    // Pixel 7 Pro specs
-    private static final int PIXEL_7_PRO_CORES = 8;
-    private static final long PIXEL_7_PRO_RAM_BYTES = 12L * 1024 * 1024 * 1024; // 12GB
-    private static final long PIXEL_7_PRO_RAM_KB = 12L * 1024 * 1024; // 12GB in KB
+    private static DeviceHardwareProfile getHardwareProfile() {
+        DeviceProfile active = ActiveProfileManager.getInstance().getActiveProfile();
+        String model = active != null ? active.getModel() : null;
+        return DeviceHardwareProfile.getForModel(model);
+    }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             hookRuntimeCores();
             hookActivityManagerMemory(lpparam);
             hookDebugMemory();
-            hookFileReads(); // Hook /proc/cpuinfo and /proc/meminfo reads
+            hookFileReads();
             XposedBridge.log(TAG + ": Successfully hooked hardware specs");
         } catch (Exception e) {
             XposedBridge.log(TAG + ": Failed to hook hardware: " + e.getMessage());
         }
     }
 
-    /**
-     * Hook Runtime.availableProcessors() to return 8 cores
-     */
     private static void hookRuntimeCores() {
         try {
             XposedHelpers.findAndHookMethod(Runtime.class, "availableProcessors",
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        param.setResult(PIXEL_7_PRO_CORES);
+                        param.setResult(getHardwareProfile().cores);
                     }
                 });
         } catch (Exception e) {
@@ -62,9 +54,6 @@ public class HardwareHooks {
         }
     }
 
-    /**
-     * Hook ActivityManager memory info methods
-     */
     private static void hookActivityManagerMemory(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             Class<?> activityManagerClass = XposedHelpers.findClassIfExists(
@@ -74,7 +63,6 @@ public class HardwareHooks {
                 return;
             }
 
-            // Hook getMemoryInfo()
             XposedHelpers.findAndHookMethod(activityManagerClass, "getMemoryInfo",
                 ActivityManager.MemoryInfo.class,
                 new XC_MethodHook() {
@@ -82,35 +70,35 @@ public class HardwareHooks {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         ActivityManager.MemoryInfo memInfo = (ActivityManager.MemoryInfo) param.args[0];
                         if (memInfo != null) {
-                            // Spoof total RAM to 12GB
-                            memInfo.totalMem = PIXEL_7_PRO_RAM_BYTES;
-                            // Keep available/free memory proportional
+                            DeviceHardwareProfile hw = getHardwareProfile();
                             long originalTotal = memInfo.totalMem;
+                            long originalAvail = memInfo.availMem;
+
+                            memInfo.totalMem = hw.ramBytes;
+
                             if (originalTotal > 0) {
-                                double usedRatio = 1.0 - ((double) memInfo.availMem / originalTotal);
-                                memInfo.availMem = (long) (PIXEL_7_PRO_RAM_BYTES * (1.0 - usedRatio));
+                                double availRatio = (double) originalAvail / originalTotal;
+                                memInfo.availMem = (long) (hw.ramBytes * availRatio);
+                            } else {
+                                memInfo.availMem = hw.ramBytes / 2;
                             }
                         }
                     }
                 });
 
-            // Hook getMemoryClass() - returns heap size in MB
             XposedHelpers.findAndHookMethod(activityManagerClass, "getMemoryClass",
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        // Pixel 7 Pro typically has 512MB heap per app
-                        param.setResult(512);
+                        param.setResult(getHardwareProfile().heapClass);
                     }
                 });
 
-            // Hook getLargeMemoryClass()
             XposedHelpers.findAndHookMethod(activityManagerClass, "getLargeMemoryClass",
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        // Large heap on Pixel 7 Pro
-                        param.setResult(1024);
+                        param.setResult(getHardwareProfile().largeHeapClass);
                     }
                 });
 
@@ -119,9 +107,6 @@ public class HardwareHooks {
         }
     }
 
-    /**
-     * Hook Debug.getNativeHeapSize() and related memory methods
-     */
     private static void hookDebugMemory() {
         try {
             XposedHelpers.findAndHookMethod(Debug.class, "getNativeHeapSize",
@@ -129,38 +114,44 @@ public class HardwareHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         long originalSize = (Long) param.getResult();
-                        // Scale to 12GB device
-                        param.setResult(originalSize * 4);
+                        DeviceHardwareProfile hw = getHardwareProfile();
+                        long scale = hw.ramBytes / (4L * 1024 * 1024 * 1024);
+                        if (scale < 1) scale = 1;
+                        param.setResult(originalSize * scale);
                     }
                 });
         } catch (Exception e) {
-            // Method might not exist on all Android versions
         }
     }
 
-    /**
-     * Hook file reads to intercept /proc/cpuinfo and /proc/meminfo
-     */
     private static void hookFileReads() {
-        // Hook BufferedReader for /proc/cpuinfo
         try {
-            XposedHelpers.findAndHookConstructor(BufferedReader.class,
-                java.io.Reader.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        BufferedReader reader = (BufferedReader) param.thisObject;
-                        // Check if reading from FileReader
-                        if (param.args[0] instanceof FileReader) {
-                            // We'll intercept readLine() calls instead
+            ThreadLocal<Boolean> isSpoofing = new ThreadLocal<>();
+            XposedHelpers.findAndHookMethod(BufferedReader.class, "readLine", new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    if (Boolean.TRUE.equals(isSpoofing.get())) return;
+                    isSpoofing.set(true);
+                }
+
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    try {
+                        String line = (String) param.getResult();
+                        if (line != null && line.startsWith("Hardware")) {
+                            DeviceProfile profile = ActiveProfileManager.getInstance().getActiveProfile();
+                            if (profile != null && profile.getHardware() != null) {
+                                param.setResult("Hardware\t: " + profile.getHardware());
+                            }
                         }
+                    } finally {
+                        isSpoofing.remove();
                     }
-                });
+                }
+            });
         } catch (Exception e) {
-            // Ignore
         }
 
-        // Hook RandomAccessFile reads for /proc/meminfo
         try {
             XposedHelpers.findAndHookMethod(RandomAccessFile.class, "readLine",
                 new XC_MethodHook() {
@@ -168,18 +159,16 @@ public class HardwareHooks {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         String line = (String) param.getResult();
                         if (line != null) {
-                            // Spoof MemTotal in /proc/meminfo
                             if (line.startsWith("MemTotal:")) {
-                                param.setResult("MemTotal:       " + PIXEL_7_PRO_RAM_KB + " kB");
+                                long ramKb = getHardwareProfile().ramBytes / 1024;
+                                param.setResult("MemTotal:       " + ramKb + " kB");
                             }
                         }
                     }
                 });
         } catch (Exception e) {
-            // Ignore
         }
 
-        // Hook File operations for /proc/cpuinfo
         try {
             XposedHelpers.findAndHookMethod(File.class, "exists",
                 new XC_MethodHook() {
@@ -188,14 +177,12 @@ public class HardwareHooks {
                         File file = (File) param.thisObject;
                         String path = file.getAbsolutePath();
 
-                        // Ensure /proc/cpuinfo exists (some apps check this)
                         if (path.equals("/proc/cpuinfo") || path.equals("/proc/meminfo")) {
-                            // Let it pass through normally
+                            // Let it pass
                         }
                     }
                 });
         } catch (Exception e) {
-            // Ignore
         }
     }
 }

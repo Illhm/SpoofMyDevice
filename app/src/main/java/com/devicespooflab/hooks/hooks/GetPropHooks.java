@@ -1,5 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
+import com.devicespooflab.hooks.data.ActiveProfileManager;
+import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import java.io.ByteArrayInputStream;
@@ -29,6 +31,13 @@ public final class GetPropHooks {
     private static final String TAG = "SpoofMyDevice-GetProp";
 
     private GetPropHooks() {
+    }
+
+    private static DeviceProfile getActiveProfile() {
+        return ActiveProfileManager.getInstance().getActiveProfile();
+    }
+    private static String getExtraProperty(String key) {
+        return ActiveProfileManager.getInstance().getExtraProperty(key);
     }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {

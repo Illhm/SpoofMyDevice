@@ -283,7 +283,7 @@ public class ConfigFileManager {
             outputStream.write(builder.toString().getBytes(StandardCharsets.UTF_8));
         }
         makeConfigReadable(context, configFile);
-        writePublicMirror(builder.toString());
+        writePublicMirror(redactForPublicMirror(builder.toString()));
         writeRootMirror(configFile);
         mirrorForXposed(context, builder.toString());
         grantConfigUriReadAccess(context);
@@ -567,6 +567,26 @@ public class ConfigFileManager {
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    private String redactForPublicMirror(String content) {
+        if (content == null) return null;
+        String[] lines = content.split("\n");
+        StringBuilder redacted = new StringBuilder();
+        for (String line : lines) {
+            if (line.trim().startsWith("ro.serialno=") ||
+                line.trim().startsWith("ro.boot.serialno=") ||
+                line.trim().startsWith("ANDROID_ID=") ||
+                line.trim().startsWith("SPOOF_IMEI=") ||
+                line.trim().startsWith("SPOOF_IMSI=") ||
+                line.trim().startsWith("SPOOF_ICCID=") ||
+                line.trim().startsWith("SPOOF_MAC_ADDRESS=") ||
+                line.trim().startsWith("SPOOF_GAID=")) {
+                continue;
+            }
+            redacted.append(line).append("\n");
+        }
+        return redacted.toString();
     }
 
     private void writePublicMirror(String content) {

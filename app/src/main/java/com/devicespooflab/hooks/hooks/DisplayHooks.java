@@ -4,6 +4,8 @@ import android.content.res.Configuration;
 import android.graphics.Point;
 import android.util.DisplayMetrics;
 
+import com.devicespooflab.hooks.data.ActiveProfileManager;
+import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -17,6 +19,10 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public class DisplayHooks {
 
     private static final String TAG = "DeviceSpoofLab-Display";
+
+    private static DeviceProfile getActiveProfile() {
+        return ActiveProfileManager.getInstance().getActiveProfile();
+    }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         hookResourcesMetrics();

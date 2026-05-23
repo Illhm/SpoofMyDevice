@@ -2,6 +2,8 @@ package com.devicespooflab.hooks.hooks;
 
 import android.content.ContentResolver;
 
+import com.devicespooflab.hooks.data.ActiveProfileManager;
+import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -18,6 +20,10 @@ public class SettingsHooks {
 
     private static final String ANDROID_ID = "android_id";
     private static final String GSF_ID = "gsf_id";
+
+    private static DeviceProfile getActiveProfile() {
+        return ActiveProfileManager.getInstance().getActiveProfile();
+    }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         Class<?> settingsSecure = XposedHelpers.findClassIfExists(
@@ -42,7 +48,7 @@ public class SettingsHooks {
                             }
 
                             if (ANDROID_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getAndroidId();
+                                String spoofedValue = getActiveProfile() != null ? getActiveProfile().getAndroidId() : null;
                                 if (spoofedValue != null) {
                                     param.setResult(spoofedValue);
                                 }
@@ -73,7 +79,7 @@ public class SettingsHooks {
                             }
 
                             if (ANDROID_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getAndroidId();
+                                String spoofedValue = getActiveProfile() != null ? getActiveProfile().getAndroidId() : null;
                                 if (spoofedValue != null) {
                                     param.setResult(spoofedValue);
                                 }

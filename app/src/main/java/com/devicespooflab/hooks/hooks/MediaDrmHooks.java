@@ -1,5 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
+import com.devicespooflab.hooks.data.ActiveProfileManager;
+import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -13,6 +15,10 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public class MediaDrmHooks {
 
     private static final String DEVICE_UNIQUE_ID = "deviceUniqueId";
+
+    private static DeviceProfile getActiveProfile() {
+        return ActiveProfileManager.getInstance().getActiveProfile();
+    }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         Class<?> mediaDrmClass = XposedHelpers.findClassIfExists(

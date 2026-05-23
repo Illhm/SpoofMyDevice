@@ -1,5 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
+import com.devicespooflab.hooks.data.ActiveProfileManager;
+import com.devicespooflab.hooks.data.DeviceProfile;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import java.lang.reflect.Array;
@@ -36,6 +38,10 @@ public class PackageManagerHooks {
         "android.hardware.telephony.euicc",
         "android.hardware.telephony.mbms"
     ));
+
+    private static DeviceProfile getActiveProfile() {
+        return ActiveProfileManager.getInstance().getActiveProfile();
+    }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {

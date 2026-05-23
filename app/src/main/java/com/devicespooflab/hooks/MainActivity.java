@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.widget.NestedScrollView;
@@ -79,6 +80,21 @@ public class MainActivity extends AppCompatActivity {
         setupBottomNavigation(savedInstanceState);
         binding.saveFab.setOnClickListener(view -> saveFromEditor());
         refreshRemotePresets(false);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (selectedNavigationItemId != R.id.navigation_home) {
+                    if (tabletNavigation) {
+                        binding.navigationRail.setSelectedItemId(R.id.navigation_home);
+                    } else {
+                        binding.bottomNavigation.setSelectedItemId(R.id.navigation_home);
+                    }
+                } else {
+                    finish();
+                }
+            }
+        });
     }
 
     public List<DevicePreset> getPresets() {
