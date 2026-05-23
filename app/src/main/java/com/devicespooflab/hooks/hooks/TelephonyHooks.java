@@ -27,8 +27,18 @@ public class TelephonyHooks {
     private static final int SYNTHETIC_SIM_SLOT_INDEX = 0;
     private static final Set<Object> SYNTHETIC_SUBSCRIPTION_INFOS =
         Collections.newSetFromMap(new WeakHashMap<>());
+    private static final String[] TELEPHONY_CRITICAL_PACKAGES = new String[] {
+        "android",
+        "com.android.phone",
+        "com.android.server.telecom",
+        "com.android.imsserviceentitlement",
+        "com.qualcomm.qti.telephonyservice"
+    };
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
+        if (shouldBypassForPackage(lpparam.packageName)) {
+            return;
+        }
         Class<?> telephonyManager = XposedHelpers.findClassIfExists(
                 "android.telephony.TelephonyManager",
                 lpparam.classLoader
@@ -629,6 +639,18 @@ public class TelephonyHooks {
                     });
         } catch (NoSuchMethodError ignored) {
         }
+    }
+
+    private static boolean shouldBypassForPackage(String packageName) {
+        if (packageName == null) {
+            return false;
+        }
+        for (String blocked : TELEPHONY_CRITICAL_PACKAGES) {
+            if (blocked.equals(packageName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void hookSubscriptionManager(Class<?> subscriptionManager, Class<?> subscriptionInfoClass) {
