@@ -47,8 +47,11 @@ public class HardwareHooks {
 
     private static void refreshPreset() {
         try {
-            String model = ConfigManager.getValue("model", "");
-            String abi = ConfigManager.getValue("cpu_abi", "arm64-v8a");
+            String model = ConfigManager.getBuildModel();
+            String abi = ConfigManager.getCpuAbi();
+            if (abi == null || abi.trim().isEmpty()) {
+                abi = "arm64-v8a";
+            }
             activePreset = HardwareProfileResolver.resolve(model, abi);
         } catch (Throwable ignored) {
             activePreset = HardwareProfileResolver.resolve("", "arm64-v8a");

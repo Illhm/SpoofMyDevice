@@ -37,7 +37,7 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode) throws FileNotFoundException {
-        Context context = requireContext();
+        Context context = requireProviderContext();
         CallerVerifier.enforceTrustedCaller(context);
 
         if (!FILE_NAME.equals(uri.getLastPathSegment())) {
@@ -61,7 +61,7 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public Cursor query(@NonNull Uri uri, @Nullable String[] projection, @Nullable String selection, @Nullable String[] selectionArgs, @Nullable String sortOrder) {
-        CallerVerifier.enforceTrustedCaller(requireContext());
+        CallerVerifier.enforceTrustedCaller(requireProviderContext());
         String content = readConfigContent();
         if (content == null) {
             return null;
@@ -78,7 +78,7 @@ public class ConfigProvider extends ContentProvider {
             return super.call(method, arg, extras);
         }
 
-        CallerVerifier.enforceTrustedCaller(requireContext());
+        CallerVerifier.enforceTrustedCaller(requireProviderContext());
         String content = readConfigContent();
         if (content == null) {
             return null;
@@ -130,7 +130,7 @@ public class ConfigProvider extends ContentProvider {
     }
 
     @NonNull
-    private Context requireContext() {
+    private Context requireProviderContext() {
         Context context = getContext();
         if (context == null) {
             throw new IllegalStateException("Provider context unavailable");
