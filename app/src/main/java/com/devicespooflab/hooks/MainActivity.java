@@ -26,6 +26,7 @@ import com.devicespooflab.hooks.databinding.ActivityMainBinding;
 import com.devicespooflab.hooks.ui.AppSettingsFragment;
 import com.devicespooflab.hooks.ui.DeviceSettingsFragment;
 import com.devicespooflab.hooks.ui.HomeFragment;
+import com.devicespooflab.hooks.ui.ConsistencyCheckFragment;
 import com.devicespooflab.hooks.utils.ConfigManager;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_HOME = "home";
     private static final String TAG_DEVICE_SETTINGS = "device_settings";
     private static final String TAG_APP_SETTINGS = "app_settings";
+    private static final String TAG_DIAGNOSTICS = "diagnostics";
     private static final String STATE_SELECTED_TAB = "selected_tab";
 
     private ActivityMainBinding binding;
@@ -55,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private HomeFragment homeFragment;
     private DeviceSettingsFragment settingsFragment;
     private AppSettingsFragment appSettingsFragment;
+    private ConsistencyCheckFragment consistencyCheckFragment;
     private boolean tabletNavigation;
     private boolean syncingNavigationSelection;
     private int selectedNavigationItemId = R.id.navigation_home;
@@ -77,6 +80,16 @@ public class MainActivity extends AppCompatActivity {
 
         setupFragments(savedInstanceState);
         setupBottomNavigation(savedInstanceState);
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (selectedNavigationItemId != R.id.navigation_home) {
+                    handleNavigationSelection(R.id.navigation_home);
+                } else {
+                    finish();
+                }
+            }
+        });
         binding.saveFab.setOnClickListener(view -> saveFromEditor());
         refreshRemotePresets(false);
     }
@@ -146,11 +159,13 @@ public class MainActivity extends AppCompatActivity {
         homeFragment = (HomeFragment) fragmentManager.findFragmentByTag(TAG_HOME);
         settingsFragment = (DeviceSettingsFragment) fragmentManager.findFragmentByTag(TAG_DEVICE_SETTINGS);
         appSettingsFragment = (AppSettingsFragment) fragmentManager.findFragmentByTag(TAG_APP_SETTINGS);
+        consistencyCheckFragment = (ConsistencyCheckFragment) fragmentManager.findFragmentByTag(TAG_DIAGNOSTICS);
 
         if (homeFragment == null) {
             homeFragment = new HomeFragment();
             settingsFragment = new DeviceSettingsFragment();
             appSettingsFragment = new AppSettingsFragment();
+            consistencyCheckFragment = new ConsistencyCheckFragment();
 
             fragmentManager.beginTransaction()
                 .add(R.id.fragment_container, homeFragment, TAG_HOME)
@@ -158,11 +173,14 @@ public class MainActivity extends AppCompatActivity {
                 .hide(settingsFragment)
                 .add(R.id.fragment_container, appSettingsFragment, TAG_APP_SETTINGS)
                 .hide(appSettingsFragment)
+                .add(R.id.fragment_container, consistencyCheckFragment, TAG_DIAGNOSTICS)
+                .hide(consistencyCheckFragment)
                 .commitNow();
         }
         applyFragmentHeaderChrome(homeFragment);
         applyFragmentHeaderChrome(settingsFragment);
         applyFragmentHeaderChrome(appSettingsFragment);
+        applyFragmentHeaderChrome(consistencyCheckFragment);
     }
 
     private void setupBottomNavigation(Bundle savedInstanceState) {
@@ -213,6 +231,9 @@ public class MainActivity extends AppCompatActivity {
             target = settingsFragment;
             showSave = true;
             settingsFragment.refreshFromHost(false);
+        } else if (itemId == R.id.navigation_diagnostics) {
+            target = consistencyCheckFragment;
+            showSave = false;
         } else if (itemId == R.id.navigation_app_settings) {
             target = appSettingsFragment;
             showSave = false;
@@ -226,7 +247,8 @@ public class MainActivity extends AppCompatActivity {
         getSupportFragmentManager().beginTransaction()
             .hide(homeFragment)
             .hide(settingsFragment)
-            .hide(appSettingsFragment)
+             .hide(appSettingsFragment)
+            .hide(consistencyCheckFragment)
             .show(target)
             .commitNow();
 
