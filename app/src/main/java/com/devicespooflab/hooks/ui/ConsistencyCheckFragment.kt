@@ -44,7 +44,7 @@ class ConsistencyCheckFragment : Fragment() {
                         }
                         tv.text = "$icon ${item.key}\nExpected: ${item.expected}\nActual: ${item.actual}"
                         val color = when (item.status) {
-                            CheckStatus.MATCH -> R.color.status_active
+                            CheckStatus.MATCH -> R.color.dsl_success
                             CheckStatus.HIDDEN -> android.R.color.holo_orange_dark
                             CheckStatus.LEAKED -> android.R.color.holo_red_dark
                         }
