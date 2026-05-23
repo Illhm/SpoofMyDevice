@@ -2,14 +2,18 @@ package com.devicespooflab.hooks;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
-import android.os.Bundle;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.devicespooflab.hooks.security.CallerVerifier;
+import com.devicespooflab.hooks.security.RedactedLogger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 
 public class ConfigProvider extends ContentProvider {
 
+    private static final String TAG = "ConfigProvider";
     public static final String AUTHORITY = "com.spoofmydevice.configprovider";
     public static final String FILE_NAME = "device_profile.conf";
     public static final Uri CONFIG_URI = Uri.parse("content://" + AUTHORITY + "/" + FILE_NAME);
@@ -32,11 +37,14 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode) throws FileNotFoundException {
-        if (getContext() == null || !FILE_NAME.equals(uri.getLastPathSegment())) {
+        Context context = requireContext();
+        CallerVerifier.enforceTrustedCaller(context);
+
+        if (!FILE_NAME.equals(uri.getLastPathSegment())) {
             throw new FileNotFoundException("Unknown config uri: " + uri);
         }
 
-        File configFile = new File(getContext().getFilesDir(), FILE_NAME);
+        File configFile = new File(context.getFilesDir(), FILE_NAME);
         if (!configFile.exists()) {
             throw new FileNotFoundException("Config file does not exist yet");
         }
@@ -53,6 +61,7 @@ public class ConfigProvider extends ContentProvider {
     @Nullable
     @Override
     public Cursor query(@NonNull Uri uri, @Nullable String[] projection, @Nullable String selection, @Nullable String[] selectionArgs, @Nullable String sortOrder) {
+        CallerVerifier.enforceTrustedCaller(requireContext());
         String content = readConfigContent();
         if (content == null) {
             return null;
@@ -68,6 +77,8 @@ public class ConfigProvider extends ContentProvider {
         if (!METHOD_GET_CONFIG.equals(method)) {
             return super.call(method, arg, extras);
         }
+
+        CallerVerifier.enforceTrustedCaller(requireContext());
         String content = readConfigContent();
         if (content == null) {
             return null;
@@ -95,11 +106,12 @@ public class ConfigProvider extends ContentProvider {
 
     @Nullable
     private String readConfigContent() {
-        if (getContext() == null) {
+        Context context = getContext();
+        if (context == null) {
             return null;
         }
 
-        File configFile = new File(getContext().getFilesDir(), FILE_NAME);
+        File configFile = new File(context.getFilesDir(), FILE_NAME);
         if (!configFile.exists()) {
             return null;
         }
@@ -111,8 +123,18 @@ public class ConfigProvider extends ContentProvider {
                 return "";
             }
             return new String(bytes, 0, read, StandardCharsets.UTF_8);
-        } catch (Exception ignored) {
+        } catch (Exception error) {
+            RedactedLogger.w(TAG, "Failed to read config content", error);
             return null;
         }
+    }
+
+    @NonNull
+    private Context requireContext() {
+        Context context = getContext();
+        if (context == null) {
+            throw new IllegalStateException("Provider context unavailable");
+        }
+        return context;
     }
 }

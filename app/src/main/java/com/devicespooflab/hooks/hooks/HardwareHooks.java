@@ -3,6 +3,7 @@ package com.devicespooflab.hooks.hooks;
 import android.app.ActivityManager;
 import android.os.Debug;
 
+import com.devicespooflab.hooks.profile.hardware.HardwareProfileResolver;
 import com.devicespooflab.hooks.utils.ConfigManager;
 
 import java.io.BufferedReader;
@@ -28,13 +29,12 @@ public class HardwareHooks {
 
     private static final String TAG = "DeviceSpoofLab-Hardware";
 
-    // Pixel 7 Pro specs
-    private static final int PIXEL_7_PRO_CORES = 8;
-    private static final long PIXEL_7_PRO_RAM_BYTES = 12L * 1024 * 1024 * 1024; // 12GB
-    private static final long PIXEL_7_PRO_RAM_KB = 12L * 1024 * 1024; // 12GB in KB
+    private static volatile HardwareProfileResolver.HardwarePreset activePreset =
+        HardwareProfileResolver.resolve("", "arm64-v8a");
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
+            refreshPreset();
             hookRuntimeCores();
             hookActivityManagerMemory(lpparam);
             hookDebugMemory();
@@ -45,8 +45,18 @@ public class HardwareHooks {
         }
     }
 
+    private static void refreshPreset() {
+        try {
+            String model = ConfigManager.getValue("model", "");
+            String abi = ConfigManager.getValue("cpu_abi", "arm64-v8a");
+            activePreset = HardwareProfileResolver.resolve(model, abi);
+        } catch (Throwable ignored) {
+            activePreset = HardwareProfileResolver.resolve("", "arm64-v8a");
+        }
+    }
+
     /**
-     * Hook Runtime.availableProcessors() to return 8 cores
+     * Hook Runtime.availableProcessors() to return spoofed cores
      */
     private static void hookRuntimeCores() {
         try {
@@ -54,7 +64,7 @@ public class HardwareHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        param.setResult(PIXEL_7_PRO_CORES);
+                        param.setResult(activePreset.cpuCores);
                     }
                 });
         } catch (Exception e) {
@@ -82,14 +92,10 @@ public class HardwareHooks {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         ActivityManager.MemoryInfo memInfo = (ActivityManager.MemoryInfo) param.args[0];
                         if (memInfo != null) {
-                            // Spoof total RAM to 12GB
-                            memInfo.totalMem = PIXEL_7_PRO_RAM_BYTES;
-                            // Keep available/free memory proportional
                             long originalTotal = memInfo.totalMem;
-                            if (originalTotal > 0) {
-                                double usedRatio = 1.0 - ((double) memInfo.availMem / originalTotal);
-                                memInfo.availMem = (long) (PIXEL_7_PRO_RAM_BYTES * (1.0 - usedRatio));
-                            }
+                            long originalAvail = memInfo.availMem;
+                            memInfo.totalMem = activePreset.totalRamBytes;
+                            memInfo.availMem = HardwareProfileResolver.syncedAvailMem(originalAvail, originalTotal, activePreset.totalRamBytes);
                         }
                     }
                 });
@@ -99,8 +105,7 @@ public class HardwareHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        // Pixel 7 Pro typically has 512MB heap per app
-                        param.setResult(512);
+                        param.setResult(activePreset.heapClassMb);
                     }
                 });
 
@@ -109,8 +114,7 @@ public class HardwareHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        // Large heap on Pixel 7 Pro
-                        param.setResult(1024);
+                        param.setResult(activePreset.heapClassMb * 2);
                     }
                 });
 
@@ -170,7 +174,7 @@ public class HardwareHooks {
                         if (line != null) {
                             // Spoof MemTotal in /proc/meminfo
                             if (line.startsWith("MemTotal:")) {
-                                param.setResult("MemTotal:       " + PIXEL_7_PRO_RAM_KB + " kB");
+                                param.setResult("MemTotal:       " + activePreset.totalRamKb + " kB");
                             }
                         }
                     }
