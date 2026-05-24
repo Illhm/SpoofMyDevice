@@ -17,16 +17,30 @@ final class HookValueResolver {
     private static final String TAG = "DeviceSpoofLab-Resolver";
     private static final Set<String> SENSITIVE = Set.of("imei", "imsi", "iccid", "gaid", "media_drm", "drm", "android_id", "app_set_id");
 
-    private HookValueResolver() {}
+    private final String packageName;
+
+    private HookValueResolver(String packageName) { this.packageName = packageName; }
 
     static HookValueResolver forPackage(String packageName) {
-        return new HookValueResolver();
+        return new HookValueResolver(packageName);
     }
 
     boolean isSpoofEnabled(String fieldId) {
         return !ConfigManager.isUsingEmbeddedDefaults() && ConfigManager.isSpoofEnabled(fieldId);
     }
 
+
+    String resolveAndroidId(String original) {
+        if (ConfigManager.isUsingEmbeddedDefaults()) return original;
+        String perApp = null;
+        if (!TextUtils.isEmpty(packageName)) {
+            perApp = ConfigManager.getSystemProperty("android_id." + packageName, null);
+        }
+        String candidate = !TextUtils.isEmpty(perApp) ? perApp : ConfigManager.getAndroidId();
+        if (!isValidAndroidId(candidate)) return original;
+        logModified("android_id", candidate, original);
+        return candidate;
+    }
     String resolveSystemProperty(String key, String original) {
         if (TextUtils.isEmpty(key) || ConfigManager.isUsingEmbeddedDefaults()) {
             return original;
@@ -122,6 +136,16 @@ final class HookValueResolver {
             return original;
         }
         return brand + "/" + product + "/" + device + ":" + release + "/" + id + "/" + incremental + ":" + type + "/" + tags;
+    }
+
+
+    private static boolean isValidAndroidId(String value) {
+        if (TextUtils.isEmpty(value) || value.length() != 16) return false;
+        for (int i = 0; i < value.length(); i++) {
+            char c = Character.toLowerCase(value.charAt(i));
+            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return false;
+        }
+        return true;
     }
 
     private static String[] splitCsv(String input) {

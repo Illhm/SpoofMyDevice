@@ -24,8 +24,7 @@ public class SettingsHooks {
                 String name = (String) param.args[1];
                 if (name == null) return;
                 if (ANDROID_ID.equals(name)) {
-                    if (!resolver.isSpoofEnabled(ConfigManager.FIELD_GSF_ID)) return;
-                    String spoofedValue = ConfigManager.getAndroidId();
+                    String spoofedValue = resolver.resolveAndroidId((String) param.getResult());
                     if (spoofedValue != null) param.setResult(spoofedValue);
                     return;
                 }

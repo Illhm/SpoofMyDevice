@@ -23,6 +23,10 @@
         <activity
             android:name=".SafeModeAppsActivity"
             android:exported="false" />
+        <activity
+            android:name=".AndroidIdSettingsActivity"
+            android:exported="false" />
+
 
         <!-- Main Activity - Auto-creates config file on first launch -->
         <activity
