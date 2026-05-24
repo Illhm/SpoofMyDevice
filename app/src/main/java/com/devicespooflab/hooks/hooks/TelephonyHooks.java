@@ -23,6 +23,10 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
  */
 public class TelephonyHooks {
 
+    private static boolean canSpoofIdentifier(Object originalResult) {
+        return originalResult != null;
+    }
+
     private static final int SYNTHETIC_SUBSCRIPTION_ID = 1;
     private static final int SYNTHETIC_SIM_SLOT_INDEX = 0;
     private static final Set<Object> SYNTHETIC_SUBSCRIPTION_INFOS =
@@ -56,7 +60,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getIMEI();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -74,7 +78,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getIMEI();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -92,7 +96,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getIMEI();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -110,7 +114,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getIMEI();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -128,7 +132,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getMEID();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -146,7 +150,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getMEID();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -164,7 +168,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getIMSI();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -182,7 +186,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getIMSI();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -200,7 +204,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getICCID();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }
@@ -218,7 +222,7 @@ public class TelephonyHooks {
                                 return;
                             }
                             String spoofedValue = ConfigManager.getICCID();
-                            if (spoofedValue != null) {
+                            if (spoofedValue != null && canSpoofIdentifier(param.getResult())) {
                                 param.setResult(spoofedValue);
                             }
                         }

@@ -24,12 +24,17 @@ public class BuildSerialHooks {
             return;
         }
 
+        HookValueResolver resolver = HookValueResolver.forPackage(lpparam.packageName);
         try {
             XposedHelpers.findAndHookMethod(buildClass, "getSerial",
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            String spoofedValue = ConfigManager.getSerial();
+                            Object original = param.getResult();
+                            if (!(original instanceof String)) {
+                                return;
+                            }
+                            String spoofedValue = resolver.resolveBuildField("SERIAL", ConfigManager.FIELD_BUILD_ID, (String) original);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -39,7 +44,7 @@ public class BuildSerialHooks {
         }
 
         try {
-            String spoofedValue = ConfigManager.getSerial();
+            String spoofedValue = resolver.resolveBuildField("SERIAL", ConfigManager.FIELD_BUILD_ID, (String) XposedHelpers.getStaticObjectField(buildClass, "SERIAL"));
             if (spoofedValue != null) {
                 XposedHelpers.setStaticObjectField(buildClass, "SERIAL", spoofedValue);
             }

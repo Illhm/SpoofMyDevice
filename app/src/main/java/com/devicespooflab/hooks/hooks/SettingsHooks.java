@@ -8,87 +8,36 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-/**
- * Hooks Settings.Secure.getString() to spoof Android ID and GSF ID.
- *
- * IMPORTANT: Uses narrow hooks on Settings.Secure.getString() rather than
- * broad ContentResolver.query() hooks which would break many apps.
- */
 public class SettingsHooks {
 
     private static final String ANDROID_ID = "android_id";
     private static final String GSF_ID = "gsf_id";
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
-        Class<?> settingsSecure = XposedHelpers.findClassIfExists(
-                "android.provider.Settings$Secure",
-                lpparam.classLoader
-        );
+        Class<?> settingsSecure = XposedHelpers.findClassIfExists("android.provider.Settings$Secure", lpparam.classLoader);
+        if (settingsSecure == null) return;
 
-        if (settingsSecure == null) {
-            return;
-        }
+        HookValueResolver resolver = HookValueResolver.forPackage(lpparam.packageName);
+        XC_MethodHook hook = new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) {
+                String name = (String) param.args[1];
+                if (name == null) return;
+                if (ANDROID_ID.equals(name)) {
+                    if (!resolver.isSpoofEnabled(ConfigManager.FIELD_GSF_ID)) return;
+                    String spoofedValue = ConfigManager.getAndroidId();
+                    if (spoofedValue != null) param.setResult(spoofedValue);
+                    return;
+                }
+                if (name.contains("gsf") || GSF_ID.equals(name)) {
+                    if (!resolver.isSpoofEnabled(ConfigManager.FIELD_GSF_ID)) return;
+                    String spoofedValue = ConfigManager.getGSFId();
+                    if (spoofedValue != null) param.setResult(spoofedValue);
+                }
+            }
+        };
 
-        try {
-            XposedHelpers.findAndHookMethod(settingsSecure, "getString",
-                    ContentResolver.class, String.class,
-                    new XC_MethodHook() {
-                        @Override
-                        protected void afterHookedMethod(MethodHookParam param) {
-                            String name = (String) param.args[1];
-
-                            if (name == null) {
-                                return;
-                            }
-
-                            if (ANDROID_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getAndroidId();
-                                if (spoofedValue != null) {
-                                    param.setResult(spoofedValue);
-                                }
-                                return;
-                            }
-
-                            if (name.contains("gsf") || GSF_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getGSFId();
-                                if (spoofedValue != null) {
-                                    param.setResult(spoofedValue);
-                                }
-                            }
-                        }
-                    });
-        } catch (NoSuchMethodError ignored) {
-        }
-
-        try {
-            XposedHelpers.findAndHookMethod(settingsSecure, "getString",
-                    ContentResolver.class, String.class, String.class,
-                    new XC_MethodHook() {
-                        @Override
-                        protected void afterHookedMethod(MethodHookParam param) {
-                            String name = (String) param.args[1];
-
-                            if (name == null) {
-                                return;
-                            }
-
-                            if (ANDROID_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getAndroidId();
-                                if (spoofedValue != null) {
-                                    param.setResult(spoofedValue);
-                                }
-                                return;
-                            }
-
-                            if (name.contains("gsf") || GSF_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getGSFId();
-                                if (spoofedValue != null) {
-                                    param.setResult(spoofedValue);
-                                }
-                            }
-                        }
-                    });
-        } catch (NoSuchMethodError ignored) {
-        }
+        try { XposedHelpers.findAndHookMethod(settingsSecure, "getString", ContentResolver.class, String.class, hook); } catch (NoSuchMethodError ignored) {}
+        try { XposedHelpers.findAndHookMethod(settingsSecure, "getString", ContentResolver.class, String.class, String.class, hook); } catch (NoSuchMethodError ignored) {}
     }
 }
