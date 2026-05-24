@@ -3,6 +3,7 @@ package com.devicespooflab.hooks.hooks;
 import android.os.Build;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -48,7 +49,7 @@ public class AppSetIdHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        String spoofedValue = ConfigManager.getAppSetId();
+                        String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_APP_SET_ID, ConfigManager.getAppSetId());
                         if (spoofedValue != null) {
                             param.setResult(spoofedValue);
                         }
@@ -66,7 +67,7 @@ public class AppSetIdHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        if (ConfigManager.getAppSetId() != null) {
+                        if (HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_APP_SET_ID, ConfigManager.getAppSetId()) != null) {
                             param.setResult(resolveScopeAppConstant(appSetIdInfoClass));
                         }
                     }

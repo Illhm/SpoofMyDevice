@@ -1,6 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -50,7 +51,7 @@ public class WebViewHooks {
                             Class<?> settingsClass = settings.getClass();
 
                             // Set spoofed UA immediately
-                            String spoofedUA = ConfigManager.getWebViewUserAgent();
+                            String spoofedUA = HookProfileResolver.resolveString("webview_user_agent", ConfigManager.getWebViewUserAgent());
                             if (spoofedUA != null) {
                                 try {
                                     XposedHelpers.callMethod(settings, "setUserAgentString", spoofedUA);
@@ -83,7 +84,7 @@ public class WebViewHooks {
                             Object webView = param.thisObject;
                             Object settings = XposedHelpers.callMethod(webView, "getSettings");
 
-                            String spoofedUA = ConfigManager.getWebViewUserAgent();
+                            String spoofedUA = HookProfileResolver.resolveString("webview_user_agent", ConfigManager.getWebViewUserAgent());
                             if (spoofedUA != null) {
                                 XposedHelpers.callMethod(settings, "setUserAgentString", spoofedUA);
                             }

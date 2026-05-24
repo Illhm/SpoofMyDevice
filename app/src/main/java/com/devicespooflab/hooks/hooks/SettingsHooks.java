@@ -3,6 +3,7 @@ package com.devicespooflab.hooks.hooks;
 import android.content.ContentResolver;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -42,7 +43,7 @@ public class SettingsHooks {
                             }
 
                             if (ANDROID_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getAndroidId();
+                                String spoofedValue = HookProfileResolver.resolveString("android_id", ConfigManager.getAndroidId());
                                 if (spoofedValue != null) {
                                     param.setResult(spoofedValue);
                                 }
@@ -50,7 +51,7 @@ public class SettingsHooks {
                             }
 
                             if (name.contains("gsf") || GSF_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getGSFId();
+                                String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_GSF_ID, ConfigManager.getGSFId());
                                 if (spoofedValue != null) {
                                     param.setResult(spoofedValue);
                                 }
@@ -73,7 +74,7 @@ public class SettingsHooks {
                             }
 
                             if (ANDROID_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getAndroidId();
+                                String spoofedValue = HookProfileResolver.resolveString("android_id", ConfigManager.getAndroidId());
                                 if (spoofedValue != null) {
                                     param.setResult(spoofedValue);
                                 }
@@ -81,7 +82,7 @@ public class SettingsHooks {
                             }
 
                             if (name.contains("gsf") || GSF_ID.equals(name)) {
-                                String spoofedValue = ConfigManager.getGSFId();
+                                String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_GSF_ID, ConfigManager.getGSFId());
                                 if (spoofedValue != null) {
                                     param.setResult(spoofedValue);
                                 }

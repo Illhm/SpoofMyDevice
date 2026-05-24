@@ -4,6 +4,7 @@ import android.app.ActivityManager;
 import android.os.Debug;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -27,11 +28,37 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public class HardwareHooks {
 
     private static final String TAG = "DeviceSpoofLab-Hardware";
+    private static int getConfiguredCores() {
+        String coresStr = HookProfileResolver.resolveString("hardware.cpu.cores", ConfigManager.getSystemProperty("hardware.cpu.cores", null));
+        if (coresStr != null) {
+            try { return Integer.parseInt(coresStr); } catch (Exception e) {}
+        }
+        return -1;
+    }
 
-    // Pixel 7 Pro specs
-    private static final int PIXEL_7_PRO_CORES = 8;
-    private static final long PIXEL_7_PRO_RAM_BYTES = 12L * 1024 * 1024 * 1024; // 12GB
-    private static final long PIXEL_7_PRO_RAM_KB = 12L * 1024 * 1024; // 12GB in KB
+    private static long getConfiguredRamBytes() {
+        String ramStr = HookProfileResolver.resolveString("hardware.ram.bytes", ConfigManager.getSystemProperty("hardware.ram.bytes", null));
+        if (ramStr != null) {
+            try { return Long.parseLong(ramStr); } catch (Exception e) {}
+        }
+        return -1; // Fallback
+    }
+
+    private static int getConfiguredHeapClass() {
+        String heapStr = HookProfileResolver.resolveString("hardware.heap.class", ConfigManager.getSystemProperty("hardware.heap.class", null));
+        if (heapStr != null) {
+            try { return Integer.parseInt(heapStr); } catch (Exception e) {}
+        }
+        return -1;
+    }
+
+    private static int getConfiguredHeapLarge() {
+        String heapStr = HookProfileResolver.resolveString("hardware.heap.large", ConfigManager.getSystemProperty("hardware.heap.large", null));
+        if (heapStr != null) {
+            try { return Integer.parseInt(heapStr); } catch (Exception e) {}
+        }
+        return -1;
+    }
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
@@ -48,19 +75,24 @@ public class HardwareHooks {
     /**
      * Hook Runtime.availableProcessors() to return 8 cores
      */
+
     private static void hookRuntimeCores() {
         try {
             XposedHelpers.findAndHookMethod(Runtime.class, "availableProcessors",
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        param.setResult(PIXEL_7_PRO_CORES);
+                        int configuredCores = getConfiguredCores();
+                        if (configuredCores > 0) {
+                            param.setResult(configuredCores);
+                        }
                     }
                 });
         } catch (Exception e) {
             XposedBridge.log(TAG + ": Failed to hook Runtime.availableProcessors(): " + e.getMessage());
         }
     }
+
 
     /**
      * Hook ActivityManager memory info methods
@@ -74,6 +106,12 @@ public class HardwareHooks {
                 return;
             }
 
+
+
+
+
+
+
             // Hook getMemoryInfo()
             XposedHelpers.findAndHookMethod(activityManagerClass, "getMemoryInfo",
                 ActivityManager.MemoryInfo.class,
@@ -81,26 +119,30 @@ public class HardwareHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         ActivityManager.MemoryInfo memInfo = (ActivityManager.MemoryInfo) param.args[0];
-                        if (memInfo != null) {
-                            // Spoof total RAM to 12GB
-                            memInfo.totalMem = PIXEL_7_PRO_RAM_BYTES;
-                            // Keep available/free memory proportional
+                        long configuredRam = getConfiguredRamBytes();
+                        if (memInfo != null && configuredRam > 0) {
                             long originalTotal = memInfo.totalMem;
+                            memInfo.totalMem = configuredRam;
+
+                            // Keep available/free memory proportional
                             if (originalTotal > 0) {
                                 double usedRatio = 1.0 - ((double) memInfo.availMem / originalTotal);
-                                memInfo.availMem = (long) (PIXEL_7_PRO_RAM_BYTES * (1.0 - usedRatio));
+                                memInfo.availMem = (long) (configuredRam * (1.0 - usedRatio));
                             }
                         }
                     }
                 });
+
 
             // Hook getMemoryClass() - returns heap size in MB
             XposedHelpers.findAndHookMethod(activityManagerClass, "getMemoryClass",
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        // Pixel 7 Pro typically has 512MB heap per app
-                        param.setResult(512);
+                        int heapClass = getConfiguredHeapClass();
+                        if (heapClass > 0) {
+                            param.setResult(heapClass);
+                        }
                     }
                 });
 
@@ -109,10 +151,17 @@ public class HardwareHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        // Large heap on Pixel 7 Pro
-                        param.setResult(1024);
+                        int heapLarge = getConfiguredHeapLarge();
+                        if (heapLarge > 0) {
+                            param.setResult(heapLarge);
+                        }
                     }
                 });
+
+
+
+
+
 
         } catch (Exception e) {
             XposedBridge.log(TAG + ": Failed to hook ActivityManager memory: " + e.getMessage());
@@ -141,61 +190,127 @@ public class HardwareHooks {
     /**
      * Hook file reads to intercept /proc/cpuinfo and /proc/meminfo
      */
+
+
+
+
+
+
     private static void hookFileReads() {
-        // Hook BufferedReader for /proc/cpuinfo
         try {
-            XposedHelpers.findAndHookConstructor(BufferedReader.class,
-                java.io.Reader.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        BufferedReader reader = (BufferedReader) param.thisObject;
-                        // Check if reading from FileReader
-                        if (param.args[0] instanceof FileReader) {
-                            // We'll intercept readLine() calls instead
+            ThreadLocal<Boolean> isHooking = new ThreadLocal<Boolean>() {
+                @Override
+                protected Boolean initialValue() {
+                    return false;
+                }
+            };
+
+            // Map to track if a specific reader/stream is reading from our target paths
+            java.util.Map<Object, String> targetReaders = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+            XC_MethodHook constructorHook = new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    if (isHooking.get()) return;
+
+                    if (param.args.length > 0 && param.args[0] != null) {
+                        String path = null;
+                        if (param.args[0] instanceof File) {
+                            path = ((File) param.args[0]).getAbsolutePath();
+                        } else if (param.args[0] instanceof String) {
+                            path = (String) param.args[0];
+                        }
+
+                        if (path != null && (path.equals("/proc/cpuinfo") || path.equals("/proc/meminfo"))) {
+                            // Register this instance as a target reader
+                            targetReaders.put(param.thisObject, path);
                         }
                     }
-                });
-        } catch (Exception e) {
-            // Ignore
-        }
+                }
+            };
 
-        // Hook RandomAccessFile reads for /proc/meminfo
-        try {
-            XposedHelpers.findAndHookMethod(RandomAccessFile.class, "readLine",
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            XposedBridge.hookAllConstructors(FileReader.class, constructorHook);
+            XposedBridge.hookAllConstructors(RandomAccessFile.class, constructorHook);
+
+            // Track when FileReader is wrapped in BufferedReader
+            XposedBridge.hookAllConstructors(BufferedReader.class, new XC_MethodHook() {
+                 @Override
+                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                     if (isHooking.get()) return;
+                     if (param.args.length > 0 && param.args[0] != null) {
+                         String path = targetReaders.get(param.args[0]);
+                         if (path != null) {
+                             targetReaders.put(param.thisObject, path);
+                         }
+                     }
+                 }
+            });
+
+
+            XposedHelpers.findAndHookMethod(RandomAccessFile.class, "readLine", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    if (isHooking.get()) return;
+                    String path = targetReaders.get(param.thisObject);
+                    if (path == null) return;
+
+                    isHooking.set(true);
+                    try {
                         String line = (String) param.getResult();
                         if (line != null) {
-                            // Spoof MemTotal in /proc/meminfo
-                            if (line.startsWith("MemTotal:")) {
-                                param.setResult("MemTotal:       " + PIXEL_7_PRO_RAM_KB + " kB");
+                            if (path.equals("/proc/meminfo") && line.contains("MemTotal:")) {
+                                long configuredRam = getConfiguredRamBytes();
+                                if (configuredRam > 0) {
+                                    param.setResult("MemTotal:       " + (configuredRam / 1024) + " kB");
+                                }
+                            } else if (path.equals("/proc/cpuinfo") && line.contains("processor")) {
+                                int configuredCores = getConfiguredCores();
+                                // Just a simple logic, a full spoof might rewrite the entire file
+                                if (configuredCores > 0) {
+                                     // For simplicity in this patch, we don't truncate rows but we could adjust
+                                     // core counts if we are reading the processor index line.
+                                }
                             }
                         }
+                    } finally {
+                        isHooking.set(false);
                     }
-                });
-        } catch (Exception e) {
-            // Ignore
-        }
+                }
+            });
 
-        // Hook File operations for /proc/cpuinfo
-        try {
-            XposedHelpers.findAndHookMethod(File.class, "exists",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        File file = (File) param.thisObject;
-                        String path = file.getAbsolutePath();
+            XposedHelpers.findAndHookMethod(BufferedReader.class, "readLine", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    if (isHooking.get()) return;
+                    String path = targetReaders.get(param.thisObject);
+                    if (path == null) return;
 
-                        // Ensure /proc/cpuinfo exists (some apps check this)
-                        if (path.equals("/proc/cpuinfo") || path.equals("/proc/meminfo")) {
-                            // Let it pass through normally
+                    isHooking.set(true);
+                    try {
+                        String line = (String) param.getResult();
+                        if (line != null) {
+                            if (path.equals("/proc/meminfo") && line.contains("MemTotal:")) {
+                                long configuredRam = getConfiguredRamBytes();
+                                if (configuredRam > 0) {
+                                    param.setResult("MemTotal:       " + (configuredRam / 1024) + " kB");
+                                }
+                            }
                         }
+                    } finally {
+                        isHooking.set(false);
                     }
-                });
+                }
+            });
+
+
         } catch (Exception e) {
-            // Ignore
+            XposedBridge.log(TAG + ": Failed to hook file reads: " + e.getMessage());
         }
     }
+
+
+
+
+
+
 }

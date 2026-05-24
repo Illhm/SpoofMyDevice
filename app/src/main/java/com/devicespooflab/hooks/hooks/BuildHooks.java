@@ -1,6 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -81,42 +82,68 @@ public class BuildHooks {
         return XposedHelpers.findClassIfExists(className, ClassLoader.getSystemClassLoader());
     }
 
-    private static void applyBuildFields(Class<?> buildClass) {
-        applyOrRestoreString(buildClass, "BRAND", ConfigManager.FIELD_BRAND, ConfigManager.getBuildBrand());
-        applyOrRestoreString(buildClass, "MANUFACTURER", ConfigManager.FIELD_MANUFACTURER, ConfigManager.getBuildManufacturer());
-        applyOrRestoreString(buildClass, "MODEL", ConfigManager.FIELD_MODEL, ConfigManager.getBuildModel());
-        applyOrRestoreString(buildClass, "DEVICE", ConfigManager.FIELD_DEVICE, ConfigManager.getBuildDevice());
-        applyOrRestoreString(buildClass, "PRODUCT", ConfigManager.FIELD_PRODUCT, ConfigManager.getBuildProduct());
-        applyOrRestoreString(buildClass, "BOARD", ConfigManager.FIELD_BOARD, ConfigManager.getBuildBoard());
-        applyOrRestoreString(buildClass, "HARDWARE", ConfigManager.FIELD_HARDWARE, ConfigManager.getBuildHardware());
-        applyOrRestoreString(buildClass, "FINGERPRINT", ConfigManager.FIELD_FINGERPRINT, ConfigManager.getBuildFingerprint());
-        applyOrRestoreString(buildClass, "ID", ConfigManager.FIELD_BUILD_ID, ConfigManager.getBuildId());
-        applyOrRestoreString(buildClass, "DISPLAY", ConfigManager.FIELD_BUILD_ID, ConfigManager.getBuildDisplay());
-        setStaticString(buildClass, "TAGS", ConfigManager.getBuildTags());
-        setStaticString(buildClass, "TYPE", ConfigManager.getBuildType());
-        setStaticString(buildClass, "BOOTLOADER", ConfigManager.getBuildBootloader());
-        setStaticString(buildClass, "SERIAL", ConfigManager.getSerial());
-        setStaticStringArray(buildClass, "SUPPORTED_ABIS", splitAbis(ConfigManager.getCpuAbiList()));
-        setStaticStringArray(buildClass, "SUPPORTED_64_BIT_ABIS", splitAbis(ConfigManager.getCpuAbiList64()));
-        setStaticStringArray(buildClass, "SUPPORTED_32_BIT_ABIS", splitAbis(ConfigManager.getCpuAbiList32()));
-        setStaticString(buildClass, "CPU_ABI", ConfigManager.getCpuAbi());
 
-        String[] abi32 = splitAbis(ConfigManager.getCpuAbiList32());
-        if (abi32.length > 0) {
+    private static void applyBuildFields(Class<?> buildClass) {
+        applyOrRestoreString(buildClass, "BRAND", ConfigManager.FIELD_BRAND, HookProfileResolver.resolveString(ConfigManager.FIELD_BRAND, ConfigManager.getBuildBrand()));
+        applyOrRestoreString(buildClass, "MANUFACTURER", ConfigManager.FIELD_MANUFACTURER, HookProfileResolver.resolveString(ConfigManager.FIELD_MANUFACTURER, ConfigManager.getBuildManufacturer()));
+        applyOrRestoreString(buildClass, "MODEL", ConfigManager.FIELD_MODEL, HookProfileResolver.resolveString(ConfigManager.FIELD_MODEL, ConfigManager.getBuildModel()));
+        applyOrRestoreString(buildClass, "DEVICE", ConfigManager.FIELD_DEVICE, HookProfileResolver.resolveString(ConfigManager.FIELD_DEVICE, ConfigManager.getBuildDevice()));
+        applyOrRestoreString(buildClass, "PRODUCT", ConfigManager.FIELD_PRODUCT, HookProfileResolver.resolveString(ConfigManager.FIELD_PRODUCT, ConfigManager.getBuildProduct()));
+        applyOrRestoreString(buildClass, "BOARD", ConfigManager.FIELD_BOARD, HookProfileResolver.resolveString(ConfigManager.FIELD_BOARD, ConfigManager.getBuildBoard()));
+        applyOrRestoreString(buildClass, "HARDWARE", ConfigManager.FIELD_HARDWARE, HookProfileResolver.resolveString(ConfigManager.FIELD_HARDWARE, ConfigManager.getBuildHardware()));
+        applyOrRestoreString(buildClass, "FINGERPRINT", ConfigManager.FIELD_FINGERPRINT, HookProfileResolver.resolveString(ConfigManager.FIELD_FINGERPRINT, ConfigManager.getBuildFingerprint()));
+        applyOrRestoreString(buildClass, "ID", ConfigManager.FIELD_BUILD_ID, HookProfileResolver.resolveString(ConfigManager.FIELD_BUILD_ID, ConfigManager.getBuildId()));
+        applyOrRestoreString(buildClass, "DISPLAY", ConfigManager.FIELD_BUILD_ID, HookProfileResolver.resolveString(ConfigManager.FIELD_BUILD_ID, ConfigManager.getBuildDisplay()));
+        setStaticString(buildClass, "TAGS", HookProfileResolver.resolveString("build_tags", ConfigManager.getBuildTags()));
+        setStaticString(buildClass, "TYPE", HookProfileResolver.resolveString("build_type", ConfigManager.getBuildType()));
+        setStaticString(buildClass, "BOOTLOADER", HookProfileResolver.resolveString("build_bootloader", ConfigManager.getBuildBootloader()));
+        setStaticString(buildClass, "SERIAL", HookProfileResolver.resolveString("serial", ConfigManager.getSerial()));
+        setStaticStringArray(buildClass, "SUPPORTED_ABIS", splitAbis(HookProfileResolver.resolveString("cpu_abi_list", ConfigManager.getCpuAbiList())));
+        setStaticStringArray(buildClass, "SUPPORTED_64_BIT_ABIS", splitAbis(HookProfileResolver.resolveString("cpu_abi_list_64", ConfigManager.getCpuAbiList64())));
+        setStaticStringArray(buildClass, "SUPPORTED_32_BIT_ABIS", splitAbis(HookProfileResolver.resolveString("cpu_abi_list_32", ConfigManager.getCpuAbiList32())));
+        setStaticString(buildClass, "CPU_ABI", HookProfileResolver.resolveString("cpu_abi", ConfigManager.getCpuAbi()));
+
+        String[] abi32 = splitAbis(HookProfileResolver.resolveString("cpu_abi_list_32", ConfigManager.getCpuAbiList32()));
+        if (abi32 != null && abi32.length > 0) {
             setStaticString(buildClass, "CPU_ABI2", abi32.length > 1 ? abi32[1] : abi32[0]);
         }
     }
 
     private static void applyVersionFields(Class<?> versionClass) {
-        applyOrRestoreVersionString(versionClass, "RELEASE", ConfigManager.FIELD_ANDROID_RELEASE, ConfigManager.getBuildVersionRelease());
-        applyOrRestoreVersionString(versionClass, "RELEASE_OR_CODENAME", ConfigManager.FIELD_ANDROID_RELEASE, ConfigManager.getBuildVersionRelease());
-        applyOrRestoreVersionString(versionClass, "CODENAME", ConfigManager.FIELD_ANDROID_RELEASE, ConfigManager.getBuildVersionCodename());
-        applyOrRestoreVersionString(versionClass, "INCREMENTAL", ConfigManager.FIELD_BUILD_INCREMENTAL, ConfigManager.getBuildVersionIncremental());
-        applyOrRestoreVersionString(versionClass, "SECURITY_PATCH", ConfigManager.FIELD_SECURITY_PATCH, ConfigManager.getBuildVersionSecurityPatch());
-        applyOrRestoreVersionInt(versionClass, "SDK_INT", ConfigManager.FIELD_SDK, ConfigManager.getBuildVersionSdk());
-        applyOrRestoreVersionInt(versionClass, "DEVICE_INITIAL_SDK_INT", ConfigManager.FIELD_SDK, ConfigManager.getBuildVersionSdk());
-    }
+        String sdkStringStr = HookProfileResolver.resolveString(ConfigManager.FIELD_SDK, String.valueOf(ConfigManager.getBuildVersionSdk()));
+        int sdkInt = -1;
+        if (sdkStringStr != null && !sdkStringStr.isEmpty()) {
+            try {
+                sdkInt = Integer.parseInt(sdkStringStr);
+            } catch (NumberFormatException e) {
+                // Ignore
+            }
+        }
 
+        applyOrRestoreVersionString(versionClass, "RELEASE", ConfigManager.FIELD_ANDROID_RELEASE, HookProfileResolver.resolveString(ConfigManager.FIELD_ANDROID_RELEASE, ConfigManager.getBuildVersionRelease()));
+        applyOrRestoreVersionString(versionClass, "RELEASE_OR_CODENAME", ConfigManager.FIELD_ANDROID_RELEASE, HookProfileResolver.resolveString(ConfigManager.FIELD_ANDROID_RELEASE, ConfigManager.getBuildVersionRelease()));
+        applyOrRestoreVersionString(versionClass, "CODENAME", ConfigManager.FIELD_ANDROID_RELEASE, HookProfileResolver.resolveString(ConfigManager.FIELD_ANDROID_RELEASE, ConfigManager.getBuildVersionCodename()));
+        applyOrRestoreVersionString(versionClass, "INCREMENTAL", ConfigManager.FIELD_BUILD_INCREMENTAL, HookProfileResolver.resolveString(ConfigManager.FIELD_BUILD_INCREMENTAL, ConfigManager.getBuildVersionIncremental()));
+        applyOrRestoreVersionString(versionClass, "SECURITY_PATCH", ConfigManager.FIELD_SECURITY_PATCH, HookProfileResolver.resolveString(ConfigManager.FIELD_SECURITY_PATCH, ConfigManager.getBuildVersionSecurityPatch()));
+
+        if (sdkInt > 0) {
+            applyOrRestoreVersionInt(versionClass, "SDK_INT", ConfigManager.FIELD_SDK, sdkInt);
+            applyOrRestoreVersionInt(versionClass, "DEVICE_INITIAL_SDK_INT", ConfigManager.FIELD_SDK, sdkInt);
+
+            // Android 16 Enhancement: Guarded reflection for SDK_INT_FULL
+            try {
+                Field sdkIntFullField = versionClass.getDeclaredField("SDK_INT_FULL");
+                sdkIntFullField.setAccessible(true);
+                // Create a reasonable SDK_INT_FULL value based on SDK_INT
+                int sdkIntFull = sdkInt * 100000;
+                setStaticInt(versionClass, "SDK_INT_FULL", sdkIntFull);
+            } catch (NoSuchFieldException e) {
+                // Field doesn't exist on older Android versions, which is fine
+            } catch (Exception e) {
+                // Ignore other exceptions
+            }
+        }
+    }
     private static void captureOriginalBuildFields(Class<?> buildClass) {
         captureField(buildClass, "BRAND", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "MANUFACTURER", ORIGINAL_BUILD_FIELDS);

@@ -1,6 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -48,12 +49,14 @@ public final class JavaSystemPropertyHooks {
         }
     }
 
+
+
     private static String getSpoofedValue(String key) {
         if (key == null || key.isEmpty()) {
             return null;
         }
         if ("os.arch".equals(key)) {
-            String abi = ConfigManager.getCpuAbi();
+            String abi = HookProfileResolver.resolveString("cpu_abi", ConfigManager.getCpuAbi());
             if (abi == null) {
                 return null;
             }
@@ -71,8 +74,11 @@ public final class JavaSystemPropertyHooks {
             }
             return abi;
         }
+        if ("os.version".equals(key)) {
+            return HookProfileResolver.resolveString(ConfigManager.FIELD_ANDROID_RELEASE, ConfigManager.getBuildVersionRelease());
+        }
         if ("http.agent".equals(key)) {
-            return ConfigManager.getWebViewUserAgent();
+            return HookProfileResolver.resolveString("webview_user_agent", ConfigManager.getWebViewUserAgent());
         }
         return null;
     }

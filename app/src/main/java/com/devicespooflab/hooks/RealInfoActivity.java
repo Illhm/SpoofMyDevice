@@ -47,7 +47,7 @@ public class RealInfoActivity extends AppCompatActivity {
         try {
             PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             versionName = packageInfo.versionName == null ? "" : packageInfo.versionName;
-            versionCode = packageInfo.getLongVersionCode();
+            versionCode = packageInfo.versionCode;
         } catch (Exception ignored) {
         }
 

@@ -1,6 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -21,12 +22,19 @@ public final class VendorSystemPropertiesHooks {
     private VendorSystemPropertiesHooks() {
     }
 
+
+
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
+        String manufacturer = ConfigManager.getBuildManufacturer();
+        if (manufacturer == null || !manufacturer.toLowerCase().contains("samsung")) {
+            return; // Only apply Samsung logic if the active profile is a Samsung device
+        }
         for (String className : CANDIDATE_CLASSES) {
             hookClass(className, lpparam.classLoader);
             hookClass(className, null);
         }
     }
+
 
     private static void hookClass(String className, ClassLoader classLoader) {
         Class<?> clazz = XposedHelpers.findClassIfExists(className, classLoader);
@@ -48,7 +56,8 @@ public final class VendorSystemPropertiesHooks {
             @Override
             protected void afterHookedMethod(MethodHookParam param) {
                 String key = (String) param.args[0];
-                String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
                 if (spoofedValue != null) {
                     param.setResult(spoofedValue);
                 }
@@ -70,7 +79,8 @@ public final class VendorSystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
                         if (spoofedValue == null) {
                             return;
                         }
@@ -92,7 +102,8 @@ public final class VendorSystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
                         if (spoofedValue == null) {
                             return;
                         }
@@ -114,7 +125,8 @@ public final class VendorSystemPropertiesHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         String key = (String) param.args[0];
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
                         if (spoofedValue == null) {
                             return;
                         }

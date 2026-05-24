@@ -20,7 +20,12 @@ public class ContextHooks {
         // The issue we're fixing is only relevant on Android 13+ (enforced in 14+)
         // On older Android versions, the registerReceiverInternal signature does not have a flags parameter
         // at the end, but rather a userId parameter, which we do not want to modify.
-        if (Build.VERSION.SDK_INT < 33) {
+        int sdkInt = Build.VERSION.SDK_INT;
+        try {
+            String spoofedSdk = com.devicespooflab.hooks.hooks.HookProfileResolver.resolveString("sdk", com.devicespooflab.hooks.utils.ConfigManager.getSystemProperty("ro.build.version.sdk", null));
+            if (spoofedSdk != null) sdkInt = Integer.parseInt(spoofedSdk);
+        } catch (Exception e) {}
+        if (sdkInt < 33) {
             return;
         }
 

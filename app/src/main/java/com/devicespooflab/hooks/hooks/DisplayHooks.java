@@ -5,6 +5,7 @@ import android.graphics.Point;
 import android.util.DisplayMetrics;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -18,10 +19,15 @@ public class DisplayHooks {
 
     private static final String TAG = "DeviceSpoofLab-Display";
 
+
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
+        if (!HookProfileResolver.isFeatureEnabled(ConfigManager.KEY_APPLY_SCREEN_METRICS)) {
+            return;
+        }
         hookResourcesMetrics();
         hookDisplayMetrics(lpparam);
     }
+
 
     private static void hookResourcesMetrics() {
         try {
@@ -95,7 +101,7 @@ public class DisplayHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         Point point = (Point) param.args[0];
-                        if (point != null && ConfigManager.shouldApplyScreenMetrics()) {
+                        if (point != null && HookProfileResolver.isFeatureEnabled(ConfigManager.KEY_APPLY_SCREEN_METRICS)) {
                             if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
                                 point.x = ConfigManager.getScreenWidth();
                             }
@@ -114,7 +120,7 @@ public class DisplayHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         Point point = (Point) param.args[0];
-                        if (point != null && ConfigManager.shouldApplyScreenMetrics()) {
+                        if (point != null && HookProfileResolver.isFeatureEnabled(ConfigManager.KEY_APPLY_SCREEN_METRICS)) {
                             if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
                                 point.x = ConfigManager.getScreenWidth();
                             }
@@ -128,27 +134,38 @@ public class DisplayHooks {
         }
     }
 
+
     private static void applyMetrics(DisplayMetrics metrics) {
-        if (!ConfigManager.shouldApplyScreenMetrics()) {
+        if (!HookProfileResolver.isFeatureEnabled(ConfigManager.KEY_APPLY_SCREEN_METRICS)) {
             return;
         }
-        if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH)) {
-            metrics.widthPixels = ConfigManager.getScreenWidth();
+
+        String widthStr = HookProfileResolver.resolveString(ConfigManager.FIELD_SCREEN_WIDTH, String.valueOf(ConfigManager.getScreenWidth()));
+        if (widthStr != null) {
+            try { metrics.widthPixels = Integer.parseInt(widthStr); } catch (Exception e) {}
         }
-        if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_HEIGHT)) {
-            metrics.heightPixels = ConfigManager.getScreenHeight();
+
+        String heightStr = HookProfileResolver.resolveString(ConfigManager.FIELD_SCREEN_HEIGHT, String.valueOf(ConfigManager.getScreenHeight()));
+        if (heightStr != null) {
+            try { metrics.heightPixels = Integer.parseInt(heightStr); } catch (Exception e) {}
         }
-        if (ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_DENSITY)) {
-            metrics.densityDpi = ConfigManager.getScreenDensityDpi();
-            metrics.density = ConfigManager.getScreenDensity();
-            metrics.scaledDensity = ConfigManager.getScreenDensity();
-            metrics.xdpi = metrics.densityDpi;
-            metrics.ydpi = metrics.densityDpi;
+
+        String densityStr = HookProfileResolver.resolveString(ConfigManager.FIELD_SCREEN_DENSITY, String.valueOf(ConfigManager.getScreenDensity()));
+        if (densityStr != null) {
+            try {
+                int density = Integer.parseInt(densityStr);
+                metrics.densityDpi = density;
+                metrics.density = density / 160.0f;
+                metrics.scaledDensity = metrics.density;
+                metrics.xdpi = density;
+                metrics.ydpi = density;
+            } catch (Exception e) {}
         }
     }
 
+
     private static void applyConfiguration(Configuration configuration) {
-        if (!ConfigManager.shouldApplyScreenMetrics()) {
+        if (!HookProfileResolver.isFeatureEnabled(ConfigManager.KEY_APPLY_SCREEN_METRICS)) {
             return;
         }
         boolean widthEnabled = ConfigManager.isSpoofEnabled(ConfigManager.FIELD_SCREEN_WIDTH);

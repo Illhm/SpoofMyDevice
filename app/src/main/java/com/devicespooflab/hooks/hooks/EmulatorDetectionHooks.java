@@ -1,6 +1,10 @@
 package com.devicespooflab.hooks.hooks;
 
 import java.io.File;
+import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
+import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -54,27 +58,34 @@ public class EmulatorDetectionHooks {
     /**
      * Hook File.exists() to return false for emulator-specific files
      */
+
+
     private static void hookFileExists() {
         try {
             XposedHelpers.findAndHookMethod(File.class, "exists",
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        if (!"true".equals(HookProfileResolver.resolveString("evade_emulator_detection", ConfigManager.getSystemProperty("evade_emulator_detection", "false")))) {
+                            return;
+                        }
+
                         File file = (File) param.thisObject;
                         String path = file.getAbsolutePath();
 
                         // Check if this is an emulator-specific file
                         for (String emuFile : EMULATOR_FILES) {
-                            if (path.equals(emuFile) || path.contains(emuFile)) {
+                            if (path.equals(emuFile)) {
                                 param.setResult(false);
                                 return;
                             }
                         }
 
-                        // Check for emulator keywords in path
-                        String lowerPath = path.toLowerCase();
+                        // Conservative pattern match: only hide files with exact keywords, not any path
+                        String filename = file.getName().toLowerCase();
                         for (String keyword : EMULATOR_KEYWORDS) {
-                            if (lowerPath.contains(keyword)) {
+                            // Only match specific files, not parent directories (like /data/app/.../qemu)
+                            if (filename.contains(keyword) && (path.startsWith("/sys") || path.startsWith("/dev"))) {
                                 param.setResult(false);
                                 return;
                             }
@@ -86,9 +97,7 @@ public class EmulatorDetectionHooks {
         }
     }
 
-    /**
-     * Hook File.listFiles() to filter out emulator files from directory listings
-     */
+
     private static void hookFileListFiles() {
         try {
             // Hook listFiles()
@@ -145,37 +154,39 @@ public class EmulatorDetectionHooks {
     /**
      * Filter emulator files from a list
      */
+
+
     private static List<File> filterEmulatorFiles(List<File> files) {
+        if (!"true".equals(HookProfileResolver.resolveString("evade_emulator_detection", ConfigManager.getSystemProperty("evade_emulator_detection", "false")))) {
+            return new ArrayList<>(files);
+        }
+
         List<File> filtered = new ArrayList<>();
-
         for (File file : files) {
-            String name = file.getName().toLowerCase();
-            String path = file.getAbsolutePath().toLowerCase();
-            boolean isEmulatorFile = false;
+            boolean isEmuFile = false;
+            String path = file.getAbsolutePath();
+            String lowerName = file.getName().toLowerCase();
 
-            // Check for emulator keywords
-            for (String keyword : EMULATOR_KEYWORDS) {
-                if (name.contains(keyword) || path.contains(keyword)) {
-                    isEmulatorFile = true;
+            for (String emuFile : EMULATOR_FILES) {
+                if (path.equals(emuFile)) {
+                    isEmuFile = true;
                     break;
                 }
             }
 
-            // Check for exact emulator paths
-            if (!isEmulatorFile) {
-                for (String emuFile : EMULATOR_FILES) {
-                    if (path.equals(emuFile.toLowerCase()) || path.contains(emuFile.toLowerCase())) {
-                        isEmulatorFile = true;
+            if (!isEmuFile) {
+                for (String keyword : EMULATOR_KEYWORDS) {
+                    if (lowerName.contains(keyword) && (path.startsWith("/sys") || path.startsWith("/dev"))) {
+                        isEmuFile = true;
                         break;
                     }
                 }
             }
 
-            if (!isEmulatorFile) {
+            if (!isEmuFile) {
                 filtered.add(file);
             }
         }
-
         return filtered;
     }
 }

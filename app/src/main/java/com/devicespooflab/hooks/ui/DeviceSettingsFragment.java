@@ -650,9 +650,9 @@ public class DeviceSettingsFragment extends Fragment {
                 return null;
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                return telephonyManager.getImei();
+                return "Requires Permission"; // telephonyManager.getImei()
             }
-            return telephonyManager.getDeviceId();
+            return "Requires Permission"; // telephonyManager.getDeviceId();
         } catch (Throwable ignored) {
             return null;
         }
@@ -664,7 +664,7 @@ public class DeviceSettingsFragment extends Fragment {
             if (telephonyManager == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                 return null;
             }
-            return telephonyManager.getMeid();
+            return "Requires Permission"; // telephonyManager.getMeid();
         } catch (Throwable ignored) {
             return null;
         }
@@ -676,12 +676,13 @@ public class DeviceSettingsFragment extends Fragment {
             if (telephonyManager == null) {
                 return null;
             }
-            return telephonyManager.getSubscriberId();
+            return "Requires Permission"; // telephonyManager.getSubscriberId();
         } catch (Throwable ignored) {
             return null;
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private String resolveCurrentIccid() {
         try {
             SubscriptionManager subscriptionManager = requireContext().getSystemService(SubscriptionManager.class);
@@ -699,6 +700,7 @@ public class DeviceSettingsFragment extends Fragment {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private String resolveCurrentPhoneNumber() {
         try {
             TelephonyManager telephonyManager = requireContext().getSystemService(TelephonyManager.class);

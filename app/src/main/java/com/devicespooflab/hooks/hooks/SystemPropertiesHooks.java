@@ -1,6 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -60,7 +61,8 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                        String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
 
                         if (spoofedValue != null) {
                             param.setResult(spoofedValue);
@@ -82,7 +84,8 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                        String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
 
                         if (spoofedValue != null) {
                             param.setResult(spoofedValue);
@@ -104,7 +107,8 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                        String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
 
                         if (spoofedValue != null) {
                             try {
@@ -131,7 +135,8 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                        String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
 
                         if (spoofedValue != null) {
                             // Handle both "true"/"false" and "1"/"0"
@@ -156,7 +161,8 @@ public class SystemPropertiesHooks {
                         if (ConfigManager.shouldBypassVersionSpoof(packageName) && isVersionProperty(key)) {
                             return;
                         }
-                        String spoofedValue = ConfigManager.getSystemProperty(key, null);
+                        String fieldId = ConfigManager.getToggleFieldForSystemProperty(key);
+                        String spoofedValue = HookProfileResolver.resolveString(fieldId != null ? fieldId : key, ConfigManager.getSystemProperty(key, null));
 
                         if (spoofedValue != null) {
                             try {

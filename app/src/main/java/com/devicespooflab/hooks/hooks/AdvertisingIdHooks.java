@@ -1,6 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -23,7 +24,7 @@ public class AdvertisingIdHooks {
                         new XC_MethodHook() {
                             @Override
                             protected void afterHookedMethod(MethodHookParam param) {
-                                String spoofedValue = ConfigManager.getGAID();
+                                String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_GAID, ConfigManager.getGAID());
                                 if (spoofedValue != null) {
                                     param.setResult(spoofedValue);
                                 }
@@ -44,7 +45,7 @@ public class AdvertisingIdHooks {
                         new XC_MethodHook() {
                             @Override
                             protected void afterHookedMethod(MethodHookParam param) {
-                                String spoofedValue = ConfigManager.getGAID();
+                                String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_GAID, ConfigManager.getGAID());
                                 if (spoofedValue != null) {
                                     param.setResult(spoofedValue);
                                 }

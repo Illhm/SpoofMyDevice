@@ -1,6 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -138,16 +139,22 @@ public class PackageManagerHooks {
         }
     }
 
+
+
+
     private static Boolean overrideFeature(String featureName) {
         String normalized = featureName.toLowerCase(Locale.US);
 
         for (String denied : EMULATOR_FEATURES) {
             if (normalized.contains(denied.toLowerCase(Locale.US))) {
-                return false;
+                if ("true".equals(HookProfileResolver.resolveString("evade_emulator_detection", ConfigManager.getSystemProperty("evade_emulator_detection", "false")))) {
+                    return false;
+                }
             }
         }
 
         if (TELEPHONY_FEATURES.contains(featureName)) {
+            // Can be extended with a toggle via HookProfileResolver
             return ConfigManager.shouldExposeTelephony();
         }
 
@@ -157,4 +164,7 @@ public class PackageManagerHooks {
 
         return null;
     }
+
+
+
 }

@@ -19,6 +19,7 @@ import com.devicespooflab.hooks.hooks.TelephonyHooks;
 import com.devicespooflab.hooks.hooks.VendorSystemPropertiesHooks;
 import com.devicespooflab.hooks.hooks.WebViewHooks;
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookSelfCheck;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -50,6 +51,7 @@ public class MainHook implements IXposedHookLoadPackage {
 
         try {
             ConfigManager.init();
+            HookSelfCheck.runSelfCheck();
             XposedBridge.log(TAG + ": Config initialized successfully");
         } catch (Exception exception) {
             XposedBridge.log(TAG + ": Failed to init config: " + exception.getMessage());

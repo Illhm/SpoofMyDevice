@@ -1,6 +1,7 @@
 package com.devicespooflab.hooks.hooks;
 
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -29,7 +30,7 @@ public class BuildSerialHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            String spoofedValue = ConfigManager.getSerial();
+                            String spoofedValue = HookProfileResolver.resolveString("serial", ConfigManager.getSerial());
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -39,7 +40,7 @@ public class BuildSerialHooks {
         }
 
         try {
-            String spoofedValue = ConfigManager.getSerial();
+            String spoofedValue = HookProfileResolver.resolveString("serial", ConfigManager.getSerial());
             if (spoofedValue != null) {
                 XposedHelpers.setStaticObjectField(buildClass, "SERIAL", spoofedValue);
             }

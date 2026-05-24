@@ -15,6 +15,7 @@ import java.util.WeakHashMap;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
+import com.devicespooflab.hooks.hooks.HookProfileResolver;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 /**
@@ -51,11 +52,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = ConfigManager.getIMEI();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_IMEI, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -69,11 +71,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = ConfigManager.getIMEI();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_IMEI, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -87,11 +90,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = ConfigManager.getIMEI();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_IMEI, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -105,11 +109,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = ConfigManager.getIMEI();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_IMEI, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -123,7 +128,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
@@ -141,7 +147,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
@@ -159,11 +166,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = ConfigManager.getIMSI();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_IMSI, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -177,11 +185,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = ConfigManager.getIMSI();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_IMSI, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -195,11 +204,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = ConfigManager.getICCID();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_ICCID, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -213,11 +223,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = ConfigManager.getICCID();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_ICCID, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -231,12 +242,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            String spoofedValue = ConfigManager.getPhoneNumber();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_PHONE_NUMBER, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                                 return;
                             }
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                             }
                         }
@@ -249,12 +260,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            String spoofedValue = ConfigManager.getPhoneNumber();
+                            String spoofedValue = HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_PHONE_NUMBER, null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                                 return;
                             }
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                             }
                         }
@@ -267,7 +278,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(TelephonyManager.PHONE_TYPE_NONE);
                                 return;
                             }
@@ -284,7 +295,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(false);
                                 return;
                             }
@@ -301,7 +312,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(false);
                                 return;
                             }
@@ -318,7 +329,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(TelephonyManager.SIM_STATE_ABSENT);
                                 return;
                             }
@@ -335,7 +346,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(TelephonyManager.SIM_STATE_ABSENT);
                                 return;
                             }
@@ -352,7 +363,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(0);
                                 return;
                             }
@@ -367,7 +378,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(0);
                                 return;
                             }
@@ -384,7 +395,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(0);
                                 return;
                             }
@@ -399,7 +410,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(TelephonyManager.SIM_STATE_ABSENT);
                                 return;
                             }
@@ -416,7 +427,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(TelephonyManager.SIM_STATE_ABSENT);
                                 return;
                             }
@@ -433,7 +444,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 return;
                             }
                             if (ConfigManager.shouldReportSimPresent()) {
@@ -450,7 +461,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony() || !ConfigManager.shouldReportSimPresent()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false")) || !ConfigManager.shouldReportSimPresent()) {
                                 return;
                             }
                             Object manager = param.getResult();
@@ -470,7 +482,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(false);
                                 return;
                             }
@@ -494,7 +506,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(false);
                                 return;
                             }
@@ -512,6 +524,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
+                if (param.hasThrowable()) return;
                             String mccMnc = ConfigManager.getSystemProperty("gsm.operator.numeric", null);
                             if (mccMnc != null) {
                                 param.setResult(mccMnc);
@@ -526,6 +539,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
+                if (param.hasThrowable()) return;
                             String operatorName = ConfigManager.getSystemProperty("gsm.operator.alpha", null);
                             if (operatorName != null) {
                                 param.setResult(operatorName);
@@ -540,6 +554,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
+                if (param.hasThrowable()) return;
                             String simMccMnc = ConfigManager.getSystemProperty("gsm.sim.operator.numeric", null);
                             if (simMccMnc != null) {
                                 param.setResult(simMccMnc);
@@ -554,6 +569,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
+                if (param.hasThrowable()) return;
                             String simOperatorName = ConfigManager.getSystemProperty("gsm.sim.operator.alpha", null);
                             if (simOperatorName != null) {
                                 param.setResult(simOperatorName);
@@ -568,6 +584,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
+                if (param.hasThrowable()) return;
                             String simCountry = ConfigManager.getSystemProperty("gsm.sim.operator.iso-country", null);
                             if (simCountry != null) {
                                 param.setResult(simCountry);
@@ -582,6 +599,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
+                if (param.hasThrowable()) return;
                             String networkCountry = ConfigManager.getSystemProperty("gsm.operator.iso-country", null);
                             if (networkCountry != null) {
                                 param.setResult(networkCountry);
@@ -596,11 +614,12 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
-                            String spoofedValue = firstNonBlank(ConfigManager.getPhoneNumber(), null);
+                            String spoofedValue = firstNonBlank(HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_PHONE_NUMBER, null), null);
                             if (spoofedValue != null) {
                                 param.setResult(spoofedValue);
                             }
@@ -614,7 +633,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
@@ -637,7 +657,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(0);
                                 return;
                             }
@@ -654,7 +675,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(0);
                                 return;
                             }
@@ -669,7 +691,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(new int[0]);
                                 return;
                             }
@@ -692,7 +714,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
@@ -711,7 +733,7 @@ public class TelephonyHooks {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
                             int slotIndex = param.args[0] instanceof Integer ? (Integer) param.args[0] : 0;
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(null);
                                 return;
                             }
@@ -734,7 +756,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(Collections.emptyList());
                                 return;
                             }
@@ -768,7 +791,7 @@ public class TelephonyHooks {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
                             int slotIndex = param.args[0] instanceof Integer ? (Integer) param.args[0] : 0;
-                            if (ConfigManager.shouldExposeTelephony() && ConfigManager.shouldReportSimPresent()) {
+                            if ("true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false")) && ConfigManager.shouldReportSimPresent()) {
                                 param.setResult(slotIndex == SYNTHETIC_SIM_SLOT_INDEX
                                     ? SYNTHETIC_SUBSCRIPTION_ID
                                     : -1);
@@ -784,7 +807,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (ConfigManager.shouldExposeTelephony() && ConfigManager.shouldReportSimPresent()) {
+                if (param.hasThrowable()) return;
+                            if ("true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false")) && ConfigManager.shouldReportSimPresent()) {
                                 param.setResult(SYNTHETIC_SIM_SLOT_INDEX);
                             }
                         }
@@ -799,7 +823,7 @@ public class TelephonyHooks {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
                             int slotIndex = param.args[0] instanceof Integer ? (Integer) param.args[0] : 0;
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(new int[0]);
                                 return;
                             }
@@ -819,7 +843,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 param.setResult(false);
                                 return;
                             }
@@ -837,7 +862,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (ConfigManager.shouldExposeTelephony() && ConfigManager.shouldReportSimPresent()) {
+                if (param.hasThrowable()) return;
+                            if ("true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false")) && ConfigManager.shouldReportSimPresent()) {
                                 param.setResult(true);
                             }
                         }
@@ -851,7 +877,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (ConfigManager.shouldExposeTelephony() && ConfigManager.shouldReportSimPresent()) {
+                if (param.hasThrowable()) return;
+                            if ("true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false")) && ConfigManager.shouldReportSimPresent()) {
                                 param.setResult(true);
                             }
                         }
@@ -866,7 +893,8 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
-                            if (!ConfigManager.shouldExposeTelephony()) {
+                if (param.hasThrowable()) return;
+                            if (!"true".equals(HookProfileResolver.resolveString("device.expose_telephony", "false"))) {
                                 return;
                             }
                             if (ConfigManager.shouldReportSimPresent()) {
@@ -892,7 +920,7 @@ public class TelephonyHooks {
                 ConfigManager.getSystemProperty("gsm.operator.alpha", null),
                 "Carrier"
         ));
-        hookSubscriptionInfoGetter(subscriptionInfoClass, "getNumber", () -> firstNonBlank(ConfigManager.getPhoneNumber(), ""));
+        hookSubscriptionInfoGetter(subscriptionInfoClass, "getNumber", () -> firstNonBlank(HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_PHONE_NUMBER, null), ""));
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getDataRoaming", () -> 0);
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getMcc", TelephonyHooks::parseMcc);
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getMnc", TelephonyHooks::parseMnc);
@@ -908,7 +936,7 @@ public class TelephonyHooks {
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getCardId", () -> 0);
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getPortIndex", () -> 0);
         hookSubscriptionInfoGetter(subscriptionInfoClass, "getUsageSetting", () -> 0);
-        hookSubscriptionInfoGetter(subscriptionInfoClass, "getIccId", () -> firstNonBlank(ConfigManager.getICCID(), ""));
+        hookSubscriptionInfoGetter(subscriptionInfoClass, "getIccId", () -> firstNonBlank(HookProfileResolver.resolveString(ConfigManager.KEY_SPOOF_ICCID, null), ""));
     }
 
     private static void hookSubscriptionInfoGetter(Class<?> subscriptionInfoClass, String methodName, ValueProvider valueProvider) {
@@ -917,6 +945,7 @@ public class TelephonyHooks {
                     new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
+                if (param.hasThrowable()) return;
                             if (SYNTHETIC_SUBSCRIPTION_INFOS.contains(param.thisObject)) {
                                 param.setResult(valueProvider.get());
                             }
