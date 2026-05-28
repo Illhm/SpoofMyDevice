@@ -24,6 +24,13 @@
     <string name="home_module_inactive_body">Please activate the module in LSPosed.</string>
     <string name="home_active_profile_title">Active profile</string>
     <string name="home_config_file_title">Config file</string>
+    <string name="home_magisk_root_title">Magisk root reset</string>
+    <string name="home_magisk_root_body">Request SuperUser access, randomize Android ID, Bluetooth name, hostname, and GAID, then clear Shopee and TikTok app data.</string>
+    <string name="home_magisk_root_button">Run root reset</string>
+    <string name="home_magisk_root_status_title">Last root result</string>
+    <string name="home_magisk_root_idle">Not run yet.</string>
+    <string name="home_magisk_root_running">Requesting root and running reset...</string>
+    <string name="home_magisk_root_failed">Root reset failed. Output: %1$s</string>
     <string name="home_info_profile_model_title">Device model</string>
     <string name="home_info_profile_preset_title">Preset</string>
     <string name="home_info_profile_mode_title">Mode</string>

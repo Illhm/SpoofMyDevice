@@ -3,7 +3,8 @@ package com.devicespooflab.hooks.ui;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.format.DateFormat;
-import android.util.TypedValue;import android.view.LayoutInflater;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -16,10 +17,14 @@ import com.devicespooflab.hooks.MainActivity;
 import com.devicespooflab.hooks.R;
 import com.devicespooflab.hooks.data.ConfigFileManager;
 import com.devicespooflab.hooks.data.DeviceProfile;
+import com.devicespooflab.hooks.utils.RootAccessManager;
 import com.devicespooflab.hooks.databinding.FragmentHomeBinding;
 import com.google.android.material.color.MaterialColors;
 
 import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class HomeFragment extends Fragment {
 
     private static final float STATUS_ICON_WIDTH_RATIO = 0.15f;
@@ -27,11 +32,14 @@ public class HomeFragment extends Fragment {
     private static final int STATUS_ICON_MAX_DP = 88;
 
     private FragmentHomeBinding binding;
+    private final RootAccessManager rootAccessManager = new RootAccessManager();
+    private final ExecutorService rootExecutor = Executors.newSingleThreadExecutor();
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
+        binding.magiskRootActionButton.setOnClickListener(view -> runMagiskRootReset());
         return binding.getRoot();
     }
 
@@ -45,6 +53,12 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        rootExecutor.shutdownNow();
     }
 
     public void refresh() {
@@ -91,6 +105,31 @@ public class HomeFragment extends Fragment {
         binding.profileFingerprintValue.setText(profile.getBuildFingerprint());
         binding.configUpdatedValue.setText(formatTimestamp(configFile.lastModified()));
         binding.configPathValue.setText(configFile.getAbsolutePath());
+    }
+
+
+    private void runMagiskRootReset() {
+        if (binding == null) {
+            return;
+        }
+
+        binding.magiskRootActionButton.setEnabled(false);
+        binding.magiskRootStatusValue.setText(R.string.home_magisk_root_running);
+        rootExecutor.execute(() -> {
+            RootAccessManager.MagiskResetResult result = rootAccessManager.runMagiskDeviceReset();
+            if (!isAdded()) {
+                return;
+            }
+            requireActivity().runOnUiThread(() -> {
+                if (binding == null) {
+                    return;
+                }
+                binding.magiskRootActionButton.setEnabled(true);
+                binding.magiskRootStatusValue.setText(result.isSuccessful()
+                    ? result.toDisplayText()
+                    : getString(R.string.home_magisk_root_failed, result.getRawOutput()));
+            });
+        });
     }
 
     private String formatTimestamp(long timestamp) {
