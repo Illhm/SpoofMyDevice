@@ -96,6 +96,8 @@ public class BuildHooks {
         setStaticString(buildClass, "TYPE", ConfigManager.getBuildType());
         setStaticString(buildClass, "BOOTLOADER", ConfigManager.getBuildBootloader());
         setStaticString(buildClass, "SERIAL", ConfigManager.getSerial());
+        setStaticString(buildClass, "HOST", "localhost"); // Often spoofed to localhost to hide build machine info
+        setStaticLong(buildClass, "TIME", System.currentTimeMillis() - (1000L * 60 * 60 * 24 * 30)); // Spoof build time to ~30 days ago
         setStaticStringArray(buildClass, "SUPPORTED_ABIS", splitAbis(ConfigManager.getCpuAbiList()));
         setStaticStringArray(buildClass, "SUPPORTED_64_BIT_ABIS", splitAbis(ConfigManager.getCpuAbiList64()));
         setStaticStringArray(buildClass, "SUPPORTED_32_BIT_ABIS", splitAbis(ConfigManager.getCpuAbiList32()));
@@ -132,6 +134,8 @@ public class BuildHooks {
         captureField(buildClass, "TYPE", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "BOOTLOADER", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "SERIAL", ORIGINAL_BUILD_FIELDS);
+        captureField(buildClass, "HOST", ORIGINAL_BUILD_FIELDS);
+        captureField(buildClass, "TIME", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "SUPPORTED_ABIS", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "SUPPORTED_64_BIT_ABIS", ORIGINAL_BUILD_FIELDS);
         captureField(buildClass, "SUPPORTED_32_BIT_ABIS", ORIGINAL_BUILD_FIELDS);
@@ -164,6 +168,8 @@ public class BuildHooks {
         restoreField(buildClass, "TYPE", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "BOOTLOADER", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "SERIAL", ORIGINAL_BUILD_FIELDS);
+        restoreField(buildClass, "HOST", ORIGINAL_BUILD_FIELDS);
+        restoreField(buildClass, "TIME", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "SUPPORTED_ABIS", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "SUPPORTED_64_BIT_ABIS", ORIGINAL_BUILD_FIELDS);
         restoreField(buildClass, "SUPPORTED_32_BIT_ABIS", ORIGINAL_BUILD_FIELDS);
@@ -216,6 +222,8 @@ public class BuildHooks {
         try {
             if (field.getType() == Integer.TYPE) {
                 bucket.put(fieldName, XposedHelpers.getStaticIntField(targetClass, fieldName));
+            } else if (field.getType() == Long.TYPE) {
+                bucket.put(fieldName, XposedHelpers.getStaticLongField(targetClass, fieldName));
             } else {
                 bucket.put(fieldName, XposedHelpers.getStaticObjectField(targetClass, fieldName));
             }
@@ -231,9 +239,22 @@ public class BuildHooks {
         try {
             if (field.getType() == Integer.TYPE && bucket.get(fieldName) instanceof Integer) {
                 XposedHelpers.setStaticIntField(targetClass, fieldName, (Integer) bucket.get(fieldName));
+            } else if (field.getType() == Long.TYPE && bucket.get(fieldName) instanceof Long) {
+                XposedHelpers.setStaticLongField(targetClass, fieldName, (Long) bucket.get(fieldName));
             } else {
                 XposedHelpers.setStaticObjectField(targetClass, fieldName, bucket.get(fieldName));
             }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void setStaticLong(Class<?> targetClass, String fieldName, long value) {
+        Field field = XposedHelpers.findFieldIfExists(targetClass, fieldName);
+        if (field == null) {
+            return;
+        }
+        try {
+            XposedHelpers.setStaticLongField(targetClass, fieldName, value);
         } catch (Throwable ignored) {
         }
     }

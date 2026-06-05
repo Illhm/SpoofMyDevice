@@ -28,6 +28,7 @@ import com.devicespooflab.hooks.hooks.impl.LocationHooks;
 import com.devicespooflab.hooks.hooks.impl.SubscriptionHooks;
 import com.devicespooflab.hooks.hooks.impl.WifiInfoHooks;
 import com.devicespooflab.hooks.hooks.impl.MacAddressHooks;
+import com.devicespooflab.hooks.hooks.impl.BluetoothHooks;
 import com.devicespooflab.hooks.hooks.impl.SensorHooks;
 import com.devicespooflab.hooks.hooks.impl.PackageVisibilityHooks;
 
@@ -205,6 +206,7 @@ public class MainHook implements IXposedHookLoadPackage {
         SubscriptionHooks.hook(lpparam);
         WifiInfoHooks.hook(lpparam);
         MacAddressHooks.hook(lpparam);
+        BluetoothHooks.hook(lpparam);
         SensorHooks.hook(lpparam);
         PackageVisibilityHooks.hook(lpparam);
 

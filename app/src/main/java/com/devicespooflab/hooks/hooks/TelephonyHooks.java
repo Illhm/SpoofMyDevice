@@ -592,6 +592,45 @@ public class TelephonyHooks {
         }
 
         try {
+            XposedHelpers.findAndHookMethod(telephonyManager, "getNetworkType",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) {
+                            if (ConfigManager.shouldReportSimPresent()) {
+                                param.setResult(13); // NETWORK_TYPE_LTE
+                            }
+                        }
+                    });
+        } catch (NoSuchMethodError ignored) {
+        }
+
+        try {
+            XposedHelpers.findAndHookMethod(telephonyManager, "getDataNetworkType",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) {
+                            if (ConfigManager.shouldReportSimPresent()) {
+                                param.setResult(13); // NETWORK_TYPE_LTE
+                            }
+                        }
+                    });
+        } catch (NoSuchMethodError ignored) {
+        }
+
+        try {
+            XposedHelpers.findAndHookMethod(telephonyManager, "getPhoneType",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) {
+                            if (ConfigManager.shouldReportSimPresent()) {
+                                param.setResult(1); // PHONE_TYPE_GSM
+                            }
+                        }
+                    });
+        } catch (NoSuchMethodError ignored) {
+        }
+
+        try {
             XposedHelpers.findAndHookMethod(telephonyManager, "getVoiceMailNumber",
                     new XC_MethodHook() {
                         @Override
