@@ -19,6 +19,18 @@ import com.devicespooflab.hooks.hooks.TelephonyHooks;
 import com.devicespooflab.hooks.hooks.VendorSystemPropertiesHooks;
 import com.devicespooflab.hooks.hooks.WebViewHooks;
 import com.devicespooflab.hooks.utils.ConfigManager;
+import com.devicespooflab.hooks.profile.PerAppSettings;
+import com.devicespooflab.hooks.profile.ProfileManager;
+import com.devicespooflab.hooks.diagnostics.HookDiagnostics;
+import com.devicespooflab.hooks.diagnostics.AndroidVersionCompat;
+
+import com.devicespooflab.hooks.hooks.impl.LocationHooks;
+import com.devicespooflab.hooks.hooks.impl.SubscriptionHooks;
+import com.devicespooflab.hooks.hooks.impl.WifiInfoHooks;
+import com.devicespooflab.hooks.hooks.impl.MacAddressHooks;
+import com.devicespooflab.hooks.hooks.impl.BluetoothHooks;
+import com.devicespooflab.hooks.hooks.impl.SensorHooks;
+import com.devicespooflab.hooks.hooks.impl.PackageVisibilityHooks;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -50,46 +62,59 @@ public class MainHook implements IXposedHookLoadPackage {
 
         try {
             ConfigManager.init();
-            XposedBridge.log(TAG + ": Config initialized successfully");
+            HookDiagnostics.logHookSuccess("ConfigManager.init", lpparam.packageName, "Config initialized successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": Failed to init config: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("ConfigManager.init", lpparam.packageName, exception.getMessage());
             exception.printStackTrace();
+            return;
+        }
+
+        if (!PerAppSettings.isSpoofEnabledForPackage(lpparam.packageName)) {
+            HookDiagnostics.logHookSkipped("AllHooks", lpparam.packageName, "Package not enabled for spoofing or is bypassed");
+            return;
+        }
+
+        boolean isValid = ProfileManager.isProfileValid();
+        HookDiagnostics.logDiagnosticState(lpparam.packageName, true, isValid, isValid ? "" : ProfileManager.getInvalidReason());
+
+        if (!isValid) {
+            HookDiagnostics.logHookSkipped("AllHooks", lpparam.packageName, "Profile validation failed: " + ProfileManager.getInvalidReason());
             return;
         }
 
         try {
             SystemPropertiesHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": SystemPropertiesHooks loaded");
+            HookDiagnostics.logHookSuccess("SystemPropertiesHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": SystemPropertiesHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("SystemPropertiesHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             VendorSystemPropertiesHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": VendorSystemPropertiesHooks loaded");
+            HookDiagnostics.logHookSuccess("VendorSystemPropertiesHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": VendorSystemPropertiesHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("VendorSystemPropertiesHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             JavaSystemPropertyHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": JavaSystemPropertyHooks loaded");
+            HookDiagnostics.logHookSuccess("JavaSystemPropertyHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": JavaSystemPropertyHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("JavaSystemPropertyHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             GetPropHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": GetPropHooks loaded");
+            HookDiagnostics.logHookSuccess("GetPropHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": GetPropHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("GetPropHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             BuildHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": BuildHooks loaded");
+            HookDiagnostics.logHookSuccess("BuildHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": BuildHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("BuildHooks", lpparam.packageName, exception.getMessage());
         }
 
         hookApplicationAttachForReload(lpparam);
@@ -97,84 +122,95 @@ public class MainHook implements IXposedHookLoadPackage {
 
         try {
             HardwareHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": HardwareHooks loaded");
+            HookDiagnostics.logHookSuccess("HardwareHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": HardwareHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("HardwareHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             DisplayHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": DisplayHooks loaded");
+            HookDiagnostics.logHookSuccess("DisplayHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": DisplayHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("DisplayHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             EmulatorDetectionHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": EmulatorDetectionHooks loaded");
+            HookDiagnostics.logHookSuccess("EmulatorDetectionHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": EmulatorDetectionHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("EmulatorDetectionHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             TelephonyHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": TelephonyHooks loaded");
+            HookDiagnostics.logHookSuccess("TelephonyHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": TelephonyHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("TelephonyHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             SettingsHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": SettingsHooks loaded");
+            HookDiagnostics.logHookSuccess("SettingsHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": SettingsHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("SettingsHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             AdvertisingIdHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": AdvertisingIdHooks loaded");
+            HookDiagnostics.logHookSuccess("AdvertisingIdHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": AdvertisingIdHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("AdvertisingIdHooks", lpparam.packageName, exception.getMessage());
         }
 
-        if (Build.VERSION.SDK_INT >= 30) {
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
             try {
                 AppSetIdHooks.hook(lpparam);
-                XposedBridge.log(TAG + ": AppSetIdHooks loaded");
+                HookDiagnostics.logHookSuccess("AppSetIdHooks", lpparam.packageName, "Loaded successfully");
             } catch (Exception exception) {
-                XposedBridge.log(TAG + ": AppSetIdHooks failed: " + exception.getMessage());
+                HookDiagnostics.logHookFailed("AppSetIdHooks", lpparam.packageName, exception.getMessage());
             }
+        } else {
+            HookDiagnostics.logHookSkipped("AppSetIdHooks", lpparam.packageName, "SDK < 30");
         }
 
         try {
             MediaDrmHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": MediaDrmHooks loaded");
+            HookDiagnostics.logHookSuccess("MediaDrmHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": MediaDrmHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("MediaDrmHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             WebViewHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": WebViewHooks loaded");
+            HookDiagnostics.logHookSuccess("WebViewHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": WebViewHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("WebViewHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             PackageManagerHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": PackageManagerHooks loaded");
+            HookDiagnostics.logHookSuccess("PackageManagerHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": PackageManagerHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("PackageManagerHooks", lpparam.packageName, exception.getMessage());
         }
 
         try {
             ContextHooks.hook(lpparam);
-            XposedBridge.log(TAG + ": ContextHooks loaded");
+            HookDiagnostics.logHookSuccess("ContextHooks", lpparam.packageName, "Loaded successfully");
         } catch (Exception exception) {
-            XposedBridge.log(TAG + ": ContextHooks failed: " + exception.getMessage());
+            HookDiagnostics.logHookFailed("ContextHooks", lpparam.packageName, exception.getMessage());
         }
 
-        XposedBridge.log(TAG + ": All hooks initialized for " + lpparam.packageName);
+        // New Implementation Hooks / Audit Placeholders
+        LocationHooks.hook(lpparam);
+        SubscriptionHooks.hook(lpparam);
+        WifiInfoHooks.hook(lpparam);
+        MacAddressHooks.hook(lpparam);
+        BluetoothHooks.hook(lpparam);
+        SensorHooks.hook(lpparam);
+        PackageVisibilityHooks.hook(lpparam);
+
+        XposedBridge.log(TAG + ": All hooks initialized for " + lpparam.packageName + " Limitations: " + AndroidVersionCompat.getKnownLimitations());
     }
 
     private void hookApplicationAttachForReload(XC_LoadPackage.LoadPackageParam lpparam) {

@@ -115,8 +115,11 @@ public class HomeFragment extends Fragment {
 
         binding.magiskRootActionButton.setEnabled(false);
         binding.magiskRootStatusValue.setText(R.string.home_magisk_root_running);
+
+        // Capture context safely on main thread before background execution
+        final android.content.Context safeContext = requireContext();
         rootExecutor.execute(() -> {
-            RootAccessManager.MagiskResetResult result = rootAccessManager.runMagiskDeviceReset();
+            RootAccessManager.MagiskResetResult result = rootAccessManager.runMagiskDeviceReset(safeContext);
             if (!isAdded()) {
                 return;
             }
