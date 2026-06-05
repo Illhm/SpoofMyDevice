@@ -38,7 +38,8 @@ public class MacAddressHooks {
     }
 
     private static byte[] parseMacAddress(String macAddress) {
-        String[] parts = macAddress.split(":");
+        String normalized = macAddress.replace("-", ":");
+        String[] parts = normalized.split(":");
         if (parts.length != 6) {
             return null;
         }

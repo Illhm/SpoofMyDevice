@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import android.os.UserManager;
+import android.os.UserHandle;
+import android.content.Context;
 
 public class RootAccessManager {
 
@@ -25,22 +28,31 @@ public class RootAccessManager {
         return new RootCheckResult(result.exitCode == 0 && result.output.contains("ROOT_OK"), result.output);
     }
 
-    public MagiskResetResult runMagiskDeviceReset() {
+    public MagiskResetResult runMagiskDeviceReset(Context context) {
         String newAndroidId = randomHex(16);
         String randomName = "Device_" + randomAlphaNumeric(6);
         String newGaid = UUID.randomUUID().toString();
 
+        List<Integer> activeUsers = getActiveUserIds(context);
+
         StringBuilder command = new StringBuilder();
-        command.append("OLD_ANDROID_ID=$(settings get secure android_id 2>/dev/null || true)\n");
-        command.append("echo OLD_ANDROID_ID=$OLD_ANDROID_ID\n");
-        command.append("settings put secure android_id ").append(shellQuote(newAndroidId)).append("\n");
-        command.append("settings put global bluetooth_name ").append(shellQuote(randomName)).append("\n");
-        command.append("setprop net.hostname ").append(shellQuote(randomName)).append(" 2>/dev/null || true\n");
-        command.append("settings put global advertising_id ").append(shellQuote(newGaid)).append("\n");
-        for (String packageName : TARGET_PACKAGES) {
-            command.append("if pm clear ").append(shellQuote(packageName)).append(" >/dev/null 2>&1; then ");
-            command.append("echo CLEARED:").append(packageName).append("; else echo CLEAR_FAILED:").append(packageName).append("; fi\n");
+
+        for (int userId : activeUsers) {
+            command.append("echo === Resetting User ").append(userId).append(" ===\n");
+            command.append("OLD_ANDROID_ID_").append(userId).append("=$(settings get --user ").append(userId).append(" secure android_id 2>/dev/null || true)\n");
+            command.append("echo OLD_ANDROID_ID=$OLD_ANDROID_ID_").append(userId).append("\n");
+            command.append("settings put --user ").append(userId).append(" secure android_id ").append(shellQuote(newAndroidId)).append("\n");
+            command.append("settings put --user ").append(userId).append(" global bluetooth_name ").append(shellQuote(randomName)).append("\n");
+            command.append("settings put --user ").append(userId).append(" global advertising_id ").append(shellQuote(newGaid)).append("\n");
+
+            for (String packageName : TARGET_PACKAGES) {
+                command.append("if pm clear --user ").append(userId).append(" ").append(shellQuote(packageName)).append(" >/dev/null 2>&1; then ");
+                command.append("echo CLEARED:").append(packageName).append("; else echo CLEAR_FAILED:").append(packageName).append("; fi\n");
+            }
         }
+
+        // System wide props
+        command.append("setprop net.hostname ").append(shellQuote(randomName)).append(" 2>/dev/null || true\n");
 
         CommandResult result = runSuCommand(command.toString(), ROOT_TIMEOUT_SECONDS);
         return new MagiskResetResult(
@@ -53,6 +65,34 @@ public class RootAccessManager {
             parseFailedPackages(result.output),
             result.output
         );
+    }
+
+    private List<Integer> getActiveUserIds(Context context) {
+        List<Integer> users = new ArrayList<>();
+        users.add(0); // Always include User 0
+        try {
+            if (context != null) {
+                UserManager um = (UserManager) context.getSystemService(Context.USER_SERVICE);
+                if (um != null) {
+                    List<UserHandle> userProfiles = um.getUserProfiles();
+                    for (UserHandle profile : userProfiles) {
+                        int userId = profile.hashCode(); // In modern Android, UserHandle.hashCode() usually equals userId.
+                        // Or technically profile.getIdentifier() via reflection, but hashCode is safe enough for most cases.
+                        // Let's use reflection to get exact ID just in case.
+                        try {
+                            java.lang.reflect.Method getIdentifierMethod = UserHandle.class.getMethod("getIdentifier");
+                            userId = (int) getIdentifierMethod.invoke(profile);
+                        } catch (Exception ignored) {
+                        }
+                        if (userId != 0 && !users.contains(userId)) {
+                            users.add(userId);
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return users;
     }
 
     private CommandResult runSuCommand(String command, long timeoutSeconds) {

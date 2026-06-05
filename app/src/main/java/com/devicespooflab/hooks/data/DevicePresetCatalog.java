@@ -87,7 +87,8 @@ public class DevicePresetCatalog {
     private List<DevicePreset> withCurrentDevicePreset(Context context, List<DevicePreset> source) {
         ArrayList<DevicePreset> merged = new ArrayList<>();
         merged.add(createCurrentDevicePreset(context));
-        merged.addAll(SamsungPresets.getPresets());
+        merged.addAll(RealDevicePresets.getRealPresets()); // Replace synthetics with 1:1 hardware accurate real presets
+        merged.addAll(SamsungPresets.getPresets()); // Keep legacy synthetics further down the list
         if (source != null) {
             for (DevicePreset preset : source) {
                 if (preset == null || CURRENT_DEVICE_PRESET_ID.equals(preset.getId())) {
