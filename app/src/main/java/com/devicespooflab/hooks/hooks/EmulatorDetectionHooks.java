@@ -23,29 +23,62 @@ public class EmulatorDetectionHooks {
 
     private static final String TAG = "DeviceSpoofLab-Emulator";
 
-    // Emulator-specific files to hide
-    private static final String[] EMULATOR_FILES = {
+    // Detection files to hide (Emulator, Root, Xposed)
+    private static final String[] DETECTION_FILES = {
         "/dev/qemu_pipe",
         "/dev/goldfish_pipe",
         "/sys/qemu_trace",
         "/system/lib/libc_malloc_debug_qemu.so",
         "/system/lib64/libc_malloc_debug_qemu.so",
         "/sys/devices/virtual/misc/goldfish_pipe",
-        "/sys/devices/virtual/misc/goldfish_sync"
+        "/sys/devices/virtual/misc/goldfish_sync",
+
+        // Root / Magisk / su binaries
+        "/system/app/Superuser.apk",
+        "/sbin/su",
+        "/system/bin/su",
+        "/system/xbin/su",
+        "/data/local/xbin/su",
+        "/data/local/bin/su",
+        "/system/sd/xbin/su",
+        "/system/bin/failsafe/su",
+        "/data/local/su",
+        "/su/bin/su",
+        "/data/adb/magisk",
+        "/data/adb/ksu",
+        "/data/adb/apatch",
+
+        // Xposed / LSPosed artifacts
+        "/data/misc/riru",
+        "/data/misc/zygisk"
     };
 
-    // Keywords in filenames that indicate emulator
-    private static final String[] EMULATOR_KEYWORDS = {
+    // Keywords in filenames that indicate emulator or root tools
+    private static final String[] DETECTION_KEYWORDS = {
         "goldfish",
         "ranchu",
         "vbox",
-        "qemu"
+        "qemu",
+        "magisk",
+        "edxposed",
+        "lsposed",
+        "riru",
+        "zygisk"
+    };
+
+    // Packages to hide via ClassLoader checks
+    private static final String[] XPOSED_PACKAGES = {
+        "de.robv.android.xposed.XposedBridge",
+        "de.robv.android.xposed.XposedHelpers"
     };
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             hookFileExists();
+            hookFileCanRead();
             hookFileListFiles();
+            hookRuntimeExec();
+            hookClassLoader();
         } catch (Exception e) {
             XposedBridge.log(TAG + ": Failed to hook emulator detection: " + e.getMessage());
         }
@@ -63,17 +96,17 @@ public class EmulatorDetectionHooks {
                         File file = (File) param.thisObject;
                         String path = file.getAbsolutePath();
 
-                        // Check if this is an emulator-specific file
-                        for (String emuFile : EMULATOR_FILES) {
-                            if (path.equals(emuFile) || path.contains(emuFile)) {
+                        // Check if this is a detection-specific file
+                        for (String targetFile : DETECTION_FILES) {
+                            if (path.equals(targetFile) || path.contains(targetFile)) {
                                 param.setResult(false);
                                 return;
                             }
                         }
 
-                        // Check for emulator keywords in path
+                        // Check for detection keywords in path
                         String lowerPath = path.toLowerCase();
-                        for (String keyword : EMULATOR_KEYWORDS) {
+                        for (String keyword : DETECTION_KEYWORDS) {
                             if (lowerPath.contains(keyword)) {
                                 param.setResult(false);
                                 return;
@@ -87,7 +120,40 @@ public class EmulatorDetectionHooks {
     }
 
     /**
-     * Hook File.listFiles() to filter out emulator files from directory listings
+     * Hook File.canRead() to return false for detection-specific files
+     */
+    private static void hookFileCanRead() {
+        try {
+            XposedHelpers.findAndHookMethod(File.class, "canRead",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        File file = (File) param.thisObject;
+                        String path = file.getAbsolutePath();
+
+                        for (String targetFile : DETECTION_FILES) {
+                            if (path.equals(targetFile) || path.contains(targetFile)) {
+                                param.setResult(false);
+                                return;
+                            }
+                        }
+
+                        String lowerPath = path.toLowerCase();
+                        for (String keyword : DETECTION_KEYWORDS) {
+                            if (lowerPath.contains(keyword)) {
+                                param.setResult(false);
+                                return;
+                            }
+                        }
+                    }
+                });
+        } catch (Exception e) {
+            XposedBridge.log(TAG + ": Failed to hook File.canRead(): " + e.getMessage());
+        }
+    }
+
+    /**
+     * Hook File.listFiles() to filter out emulator/root files from directory listings
      */
     private static void hookFileListFiles() {
         try {
@@ -153,18 +219,18 @@ public class EmulatorDetectionHooks {
             String path = file.getAbsolutePath().toLowerCase();
             boolean isEmulatorFile = false;
 
-            // Check for emulator keywords
-            for (String keyword : EMULATOR_KEYWORDS) {
+            // Check for detection keywords
+            for (String keyword : DETECTION_KEYWORDS) {
                 if (name.contains(keyword) || path.contains(keyword)) {
                     isEmulatorFile = true;
                     break;
                 }
             }
 
-            // Check for exact emulator paths
+            // Check for exact detection paths
             if (!isEmulatorFile) {
-                for (String emuFile : EMULATOR_FILES) {
-                    if (path.equals(emuFile.toLowerCase()) || path.contains(emuFile.toLowerCase())) {
+                for (String targetFile : DETECTION_FILES) {
+                    if (path.equals(targetFile.toLowerCase()) || path.contains(targetFile.toLowerCase())) {
                         isEmulatorFile = true;
                         break;
                     }
@@ -177,5 +243,71 @@ public class EmulatorDetectionHooks {
         }
 
         return filtered;
+    }
+
+    /**
+     * Hook Runtime.exec() to intercept 'su', 'magisk', and 'xposed' executions
+     */
+    private static void hookRuntimeExec() {
+        XC_MethodHook execHook = new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                Object arg = param.args[0];
+                String command = null;
+
+                if (arg instanceof String) {
+                    command = (String) arg;
+                } else if (arg instanceof String[]) {
+                    String[] cmdArray = (String[]) arg;
+                    if (cmdArray.length > 0) {
+                        command = cmdArray[0];
+                    }
+                }
+
+                if (command != null) {
+                    String lowerCmd = command.toLowerCase();
+                    if (lowerCmd.equals("su") || lowerCmd.endsWith("/su") ||
+                        lowerCmd.contains("magisk") || lowerCmd.contains("xposed")) {
+                        // Prevent execution by setting an invalid/harmless command or throwing
+                        param.setThrowable(new java.io.IOException("Cannot run program \"" + command + "\": error=2, No such file or directory"));
+                    }
+                }
+            }
+        };
+
+        try {
+            XposedHelpers.findAndHookMethod(Runtime.class, "exec", String.class, execHook);
+            XposedHelpers.findAndHookMethod(Runtime.class, "exec", String[].class, execHook);
+            XposedHelpers.findAndHookMethod(Runtime.class, "exec", String.class, String[].class, execHook);
+            XposedHelpers.findAndHookMethod(Runtime.class, "exec", String[].class, String[].class, execHook);
+            XposedHelpers.findAndHookMethod(Runtime.class, "exec", String.class, String[].class, File.class, execHook);
+            XposedHelpers.findAndHookMethod(Runtime.class, "exec", String[].class, String[].class, File.class, execHook);
+        } catch (Throwable e) {
+            XposedBridge.log(TAG + ": Failed to hook Runtime.exec(): " + e.getMessage());
+        }
+    }
+
+    /**
+     * Hook ClassLoader to hide Xposed classes from apps attempting dynamic detection
+     */
+    private static void hookClassLoader() {
+        try {
+            XposedHelpers.findAndHookMethod(ClassLoader.class, "loadClass", String.class, boolean.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    String className = (String) param.args[0];
+                    if (className != null) {
+                        for (String xposedClass : XPOSED_PACKAGES) {
+                            if (className.equals(xposedClass) || className.startsWith("de.robv.android.xposed.")) {
+                                param.setThrowable(new ClassNotFoundException(className));
+                                return;
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (Throwable e) {
+            XposedBridge.log(TAG + ": Failed to hook ClassLoader.loadClass(): " + e.getMessage());
+        }
     }
 }
