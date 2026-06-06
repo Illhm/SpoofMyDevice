@@ -157,6 +157,7 @@ public class RealDevicePresets {
         xiaomi14.setBrand("Xiaomi");
         xiaomi14.setManufacturer("Xiaomi");
         xiaomi14.setModel("23127PN0CG");
+        xiaomi14.setMarketName("Xiaomi 14");
         xiaomi14.setProductName("houji_global");
         xiaomi14.setDeviceCode("houji");
         xiaomi14.setBoard("houji");
@@ -164,6 +165,17 @@ public class RealDevicePresets {
         xiaomi14.setBoardPlatform("pineapple");
         xiaomi14.setSocModel("SM8650");
         xiaomi14.setSocManufacturer("Qualcomm");
+        xiaomi14.setSocName("Snapdragon 8 Gen 3");
+        xiaomi14.setSocCode("SM8650");
+        xiaomi14.setGpuRenderer("Adreno (TM) 750");
+        xiaomi14.setGpuVendor("Qualcomm");
+        xiaomi14.setCameraIds("0,1,2,3");
+        xiaomi14.setSensorNames("Accelerometer,Gyroscope,Proximity,Light,Barometer,Step Counter");
+        xiaomi14.setWifiChip("qca6390");
+        xiaomi14.setAudioCodec("wcd938x");
+        xiaomi14.setChargerName("pmic-battery");
+        xiaomi14.setNfcChip("st21nfc");
+        xiaomi14.setKernelRelease("6.1.57-android14-11-g123456789abc #1 SMP PREEMPT");
         xiaomi14.setCpuAbi("arm64-v8a");
         xiaomi14.setCpuAbiList("arm64-v8a,armeabi-v7a,armeabi");
         xiaomi14.setCpuAbiList64("arm64-v8a");

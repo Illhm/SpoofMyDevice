@@ -210,6 +210,29 @@ public class MainHook implements IXposedHookLoadPackage {
         SensorHooks.hook(lpparam);
         PackageVisibilityHooks.hook(lpparam);
 
+        com.devicespooflab.hooks.hooks.impl.FileSystemHooks.hook(lpparam);
+        com.devicespooflab.hooks.hooks.impl.GpuHooks.hook(lpparam);
+        com.devicespooflab.hooks.hooks.impl.CameraHooks.hook(lpparam);
+        com.devicespooflab.hooks.hooks.impl.AudioHooks.hook(lpparam);
+        com.devicespooflab.hooks.hooks.impl.PowerSupplyHooks.hook(lpparam);
+        com.devicespooflab.hooks.hooks.impl.NfcHooks.hook(lpparam);
+
+        // Print final consistency report
+        HookDiagnostics.logConsistencyReport(
+            lpparam.packageName,
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_MODEL),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_MARKET_NAME),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_SOC_NAME),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_GPU_RENDERER),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_GPU_VENDOR),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_KERNEL_RELEASE),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_CAMERA_IDS),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_SENSOR_NAMES),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_WIFI_CHIP),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_AUDIO_CODEC),
+            ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_CHARGER_NAME)
+        );
+
         XposedBridge.log(TAG + ": All hooks initialized for " + lpparam.packageName + " Limitations: " + AndroidVersionCompat.getKnownLimitations());
     }
 

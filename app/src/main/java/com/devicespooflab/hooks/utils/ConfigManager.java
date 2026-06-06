@@ -65,6 +65,18 @@ public class ConfigManager {
     public static final String FIELD_BOARD = "board";
     public static final String FIELD_HARDWARE = "hardware";
     public static final String FIELD_BOARD_PLATFORM = "board_platform";
+    public static final String FIELD_MARKET_NAME = "marketName";
+    public static final String FIELD_SOC_NAME = "socName";
+    public static final String FIELD_SOC_CODE = "socCode";
+    public static final String FIELD_GPU_RENDERER = "gpuRenderer";
+    public static final String FIELD_GPU_VENDOR = "gpuVendor";
+    public static final String FIELD_CAMERA_IDS = "cameraIds";
+    public static final String FIELD_SENSOR_NAMES = "sensorNames";
+    public static final String FIELD_WIFI_CHIP = "wifiChip";
+    public static final String FIELD_AUDIO_CODEC = "audioCodec";
+    public static final String FIELD_CHARGER_NAME = "chargerName";
+    public static final String FIELD_NFC_CHIP = "nfcChip";
+    public static final String FIELD_KERNEL_RELEASE = "kernelRelease";
     public static final String FIELD_ANDROID_RELEASE = "android_release";
     public static final String FIELD_SDK = "sdk";
     public static final String FIELD_SECURITY_PATCH = "security_patch";
@@ -656,7 +668,7 @@ public class ConfigManager {
         return value != null && !value.isEmpty();
     }
 
-    private static String getOptionalConfigValue(String key) {
+    public static String getOptionalConfigValue(String key) {
         String value = getConfigValue(key);
         if (value == null) {
             return null;

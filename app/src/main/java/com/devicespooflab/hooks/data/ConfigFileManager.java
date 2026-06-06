@@ -268,6 +268,20 @@ public class ConfigFileManager {
         builder.append("\n# WebView\n");
         append(builder, "webview.user_agent", profile.getUserAgent());
 
+        builder.append("\n# Hardware Details\n");
+        append(builder, "marketName", profile.getMarketName() != null ? profile.getMarketName() : "");
+        append(builder, "socName", profile.getSocName() != null ? profile.getSocName() : "");
+        append(builder, "socCode", profile.getSocCode() != null ? profile.getSocCode() : "");
+        append(builder, "gpuRenderer", profile.getGpuRenderer() != null ? profile.getGpuRenderer() : "");
+        append(builder, "gpuVendor", profile.getGpuVendor() != null ? profile.getGpuVendor() : "");
+        append(builder, "cameraIds", profile.getCameraIds() != null ? profile.getCameraIds() : "");
+        append(builder, "sensorNames", profile.getSensorNames() != null ? profile.getSensorNames() : "");
+        append(builder, "wifiChip", profile.getWifiChip() != null ? profile.getWifiChip() : "");
+        append(builder, "audioCodec", profile.getAudioCodec() != null ? profile.getAudioCodec() : "");
+        append(builder, "chargerName", profile.getChargerName() != null ? profile.getChargerName() : "");
+        append(builder, "nfcChip", profile.getNfcChip() != null ? profile.getNfcChip() : "");
+        append(builder, "kernelRelease", profile.getKernelRelease() != null ? profile.getKernelRelease() : "");
+
         if (extraProperties != null && !extraProperties.isEmpty()) {
             List<String> keys = new ArrayList<>(extraProperties.keySet());
             keys.sort(String::compareToIgnoreCase);
@@ -319,6 +333,20 @@ public class ConfigFileManager {
         apply(profile::setBuildFlavor, properties.get("ro.build.flavor"));
         apply(profile::setBuildProduct, properties.get("ro.build.product"));
         apply(profile::setBuildCharacteristics, properties.get("ro.build.characteristics"));
+
+        apply(profile::setMarketName, properties.get("marketName"));
+        apply(profile::setSocName, properties.get("socName"));
+        apply(profile::setSocCode, properties.get("socCode"));
+        apply(profile::setGpuRenderer, properties.get("gpuRenderer"));
+        apply(profile::setGpuVendor, properties.get("gpuVendor"));
+        apply(profile::setCameraIds, properties.get("cameraIds"));
+        apply(profile::setSensorNames, properties.get("sensorNames"));
+        apply(profile::setWifiChip, properties.get("wifiChip"));
+        apply(profile::setAudioCodec, properties.get("audioCodec"));
+        apply(profile::setChargerName, properties.get("chargerName"));
+        apply(profile::setNfcChip, properties.get("nfcChip"));
+        apply(profile::setKernelRelease, properties.get("kernelRelease"));
+
         profile.setScreenWidth(parseInt(properties.get("screen.width"), profile.getScreenWidth()));
         profile.setScreenHeight(parseInt(properties.get("screen.height"), profile.getScreenHeight()));
         profile.setScreenDensity(parseInt(properties.get("screen.density"), parseInt(properties.get("ro.sf.lcd_density"), profile.getScreenDensity())));
@@ -518,7 +546,19 @@ public class ConfigFileManager {
             "gsm.sim.operator.iso-country",
             "persist.sys.timezone",
             "persist.sys.usb.config",
-            "webview.user_agent"
+            "webview.user_agent",
+            "marketName",
+            "socName",
+            "socCode",
+            "gpuRenderer",
+            "gpuVendor",
+            "cameraIds",
+            "sensorNames",
+            "wifiChip",
+            "audioCodec",
+            "chargerName",
+            "nfcChip",
+            "kernelRelease"
         ));
         return keys;
     }

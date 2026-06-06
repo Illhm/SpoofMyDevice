@@ -74,6 +74,17 @@ public final class JavaSystemPropertyHooks {
         if ("http.agent".equals(key)) {
             return ConfigManager.getWebViewUserAgent();
         }
+        if ("os.version".equals(key)) {
+            String kernel = ConfigManager.getOptionalConfigValue(ConfigManager.FIELD_KERNEL_RELEASE);
+            if (kernel != null && !kernel.isEmpty()) {
+                // Return just the numeric version part typically expected here
+                int spaceIndex = kernel.indexOf(' ');
+                if (spaceIndex != -1) {
+                    return kernel.substring(0, spaceIndex);
+                }
+                return kernel;
+            }
+        }
         return null;
     }
 }

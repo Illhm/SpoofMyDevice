@@ -44,6 +44,20 @@ public class DeviceProfile {
     private String socModel;
     private String socManufacturer;
 
+    // New fields
+    private String marketName;
+    private String socName;
+    private String socCode;
+    private String gpuRenderer;
+    private String gpuVendor;
+    private String cameraIds;
+    private String sensorNames;
+    private String wifiChip;
+    private String audioCodec;
+    private String chargerName;
+    private String nfcChip;
+    private String kernelRelease;
+
     public DeviceProfile() {
     }
 
@@ -86,6 +100,18 @@ public class DeviceProfile {
         this.cpuAbiList32 = other.cpuAbiList32;
         this.socModel = other.socModel;
         this.socManufacturer = other.socManufacturer;
+        this.marketName = other.marketName;
+        this.socName = other.socName;
+        this.socCode = other.socCode;
+        this.gpuRenderer = other.gpuRenderer;
+        this.gpuVendor = other.gpuVendor;
+        this.cameraIds = other.cameraIds;
+        this.sensorNames = other.sensorNames;
+        this.wifiChip = other.wifiChip;
+        this.audioCodec = other.audioCodec;
+        this.chargerName = other.chargerName;
+        this.nfcChip = other.nfcChip;
+        this.kernelRelease = other.kernelRelease;
     }
 
     public DeviceProfile copy() {
@@ -158,6 +184,18 @@ public class DeviceProfile {
         cpuAbiList32 = firstNonBlank(cpuAbiList32, "armeabi-v7a,armeabi");
         socModel = firstNonBlank(socModel, boardPlatform);
         socManufacturer = firstNonBlank(socManufacturer, manufacturer);
+        marketName = firstNonBlank(marketName, productName);
+        socName = firstNonBlank(socName, "Snapdragon");
+        socCode = firstNonBlank(socCode, boardPlatform);
+        gpuRenderer = firstNonBlank(gpuRenderer, "Adreno");
+        gpuVendor = firstNonBlank(gpuVendor, "Qualcomm");
+        cameraIds = firstNonBlank(cameraIds, "0,1,2");
+        sensorNames = firstNonBlank(sensorNames, "Accelerometer,Gyroscope,Proximity,Light");
+        wifiChip = firstNonBlank(wifiChip, "qca6390");
+        audioCodec = firstNonBlank(audioCodec, "wcd938x");
+        chargerName = firstNonBlank(chargerName, "pmic-battery");
+        nfcChip = firstNonBlank(nfcChip, "st21nfc");
+        kernelRelease = firstNonBlank(kernelRelease, "5.10.198-android13-4-g" + Long.toHexString((long)(Math.random() * 0xFFFFFFFFL)) + " #1 SMP PREEMPT");
     }
 
     public boolean matchesPreset(DeviceProfile other) {
@@ -284,4 +322,29 @@ public class DeviceProfile {
     public void setSocModel(String socModel) { this.socModel = socModel; }
     public String getSocManufacturer() { return socManufacturer; }
     public void setSocManufacturer(String socManufacturer) { this.socManufacturer = socManufacturer; }
+
+    public String getMarketName() { return marketName; }
+    public void setMarketName(String marketName) { this.marketName = marketName; }
+    public String getSocName() { return socName; }
+    public void setSocName(String socName) { this.socName = socName; }
+    public String getSocCode() { return socCode; }
+    public void setSocCode(String socCode) { this.socCode = socCode; }
+    public String getGpuRenderer() { return gpuRenderer; }
+    public void setGpuRenderer(String gpuRenderer) { this.gpuRenderer = gpuRenderer; }
+    public String getGpuVendor() { return gpuVendor; }
+    public void setGpuVendor(String gpuVendor) { this.gpuVendor = gpuVendor; }
+    public String getCameraIds() { return cameraIds; }
+    public void setCameraIds(String cameraIds) { this.cameraIds = cameraIds; }
+    public String getSensorNames() { return sensorNames; }
+    public void setSensorNames(String sensorNames) { this.sensorNames = sensorNames; }
+    public String getWifiChip() { return wifiChip; }
+    public void setWifiChip(String wifiChip) { this.wifiChip = wifiChip; }
+    public String getAudioCodec() { return audioCodec; }
+    public void setAudioCodec(String audioCodec) { this.audioCodec = audioCodec; }
+    public String getChargerName() { return chargerName; }
+    public void setChargerName(String chargerName) { this.chargerName = chargerName; }
+    public String getNfcChip() { return nfcChip; }
+    public void setNfcChip(String nfcChip) { this.nfcChip = nfcChip; }
+    public String getKernelRelease() { return kernelRelease; }
+    public void setKernelRelease(String kernelRelease) { this.kernelRelease = kernelRelease; }
 }
