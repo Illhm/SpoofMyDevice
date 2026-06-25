@@ -3,8 +3,6 @@ package com.devicespooflab.hooks.hooks;
 import android.app.ActivityManager;
 import android.os.Debug;
 
-import com.devicespooflab.hooks.utils.ConfigManager;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -32,13 +30,6 @@ public class HardwareHooks {
     private static final int PIXEL_7_PRO_CORES = 8;
     private static final long PIXEL_7_PRO_RAM_BYTES = 12L * 1024 * 1024 * 1024; // 12GB
     private static final long PIXEL_7_PRO_RAM_KB = 12L * 1024 * 1024; // 12GB in KB
-
-    private static final ThreadLocal<Boolean> isHooking = new ThreadLocal<Boolean>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
 
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
