@@ -59,6 +59,7 @@ public class SafeModeAppsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         AppSettingsStore.applyActivityTheme(this);
         AppSettingsStore.apply(this);
         super.onCreate(savedInstanceState);

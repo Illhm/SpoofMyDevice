@@ -23,6 +23,7 @@ public class RealInfoActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         AppSettingsStore.applyActivityTheme(this);
         AppSettingsStore.apply(this);
         super.onCreate(savedInstanceState);
