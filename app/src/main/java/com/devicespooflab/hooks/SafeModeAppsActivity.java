@@ -61,9 +61,15 @@ public class SafeModeAppsActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         AppSettingsStore.applyActivityTheme(this);
         AppSettingsStore.apply(this);
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         binding = ActivitySafeModeAppsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
         setSupportActionBar(binding.topAppBar);
         configureTopBarAppearance();
 
