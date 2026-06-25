@@ -3,8 +3,6 @@ package com.devicespooflab.hooks.hooks;
 import android.app.ActivityManager;
 import android.os.Debug;
 
-import com.devicespooflab.hooks.utils.ConfigManager;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
