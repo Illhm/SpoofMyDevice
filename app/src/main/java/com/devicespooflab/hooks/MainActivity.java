@@ -64,8 +64,15 @@ public class MainActivity extends AppCompatActivity {
         AppSettingsStore.applyActivityTheme(this);
         AppSettingsStore.apply(this);
         super.onCreate(savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
         tabletNavigation = isTabletNavigation();
         configureNavigationMode();
         configureNavigationAppearance();
