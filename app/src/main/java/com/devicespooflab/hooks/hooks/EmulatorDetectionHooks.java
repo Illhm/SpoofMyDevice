@@ -72,6 +72,13 @@ public class EmulatorDetectionHooks {
         "de.robv.android.xposed.XposedHelpers"
     };
 
+    private static final ThreadLocal<Boolean> isHooking = new ThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
+
     public static void hook(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             hookFileExists();
@@ -93,24 +100,30 @@ public class EmulatorDetectionHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        File file = (File) param.thisObject;
-                        String path = file.getAbsolutePath();
+                        if (isHooking.get()) return;
+                        isHooking.set(true);
+                        try {
+                            File file = (File) param.thisObject;
+                            String path = file.getAbsolutePath();
 
-                        // Check if this is a detection-specific file
-                        for (String targetFile : DETECTION_FILES) {
-                            if (path.equals(targetFile) || path.contains(targetFile)) {
-                                param.setResult(false);
-                                return;
+                            // Check if this is a detection-specific file
+                            for (String targetFile : DETECTION_FILES) {
+                                if (path.equals(targetFile) || path.contains(targetFile)) {
+                                    param.setResult(false);
+                                    return;
+                                }
                             }
-                        }
 
-                        // Check for detection keywords in path
-                        String lowerPath = path.toLowerCase();
-                        for (String keyword : DETECTION_KEYWORDS) {
-                            if (lowerPath.contains(keyword)) {
-                                param.setResult(false);
-                                return;
+                            // Check for detection keywords in path
+                            String lowerPath = path.toLowerCase();
+                            for (String keyword : DETECTION_KEYWORDS) {
+                                if (lowerPath.contains(keyword)) {
+                                    param.setResult(false);
+                                    return;
+                                }
                             }
+                        } finally {
+                            isHooking.set(false);
                         }
                     }
                 });
@@ -128,22 +141,28 @@ public class EmulatorDetectionHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        File file = (File) param.thisObject;
-                        String path = file.getAbsolutePath();
+                        if (isHooking.get()) return;
+                        isHooking.set(true);
+                        try {
+                            File file = (File) param.thisObject;
+                            String path = file.getAbsolutePath();
 
-                        for (String targetFile : DETECTION_FILES) {
-                            if (path.equals(targetFile) || path.contains(targetFile)) {
-                                param.setResult(false);
-                                return;
+                            for (String targetFile : DETECTION_FILES) {
+                                if (path.equals(targetFile) || path.contains(targetFile)) {
+                                    param.setResult(false);
+                                    return;
+                                }
                             }
-                        }
 
-                        String lowerPath = path.toLowerCase();
-                        for (String keyword : DETECTION_KEYWORDS) {
-                            if (lowerPath.contains(keyword)) {
-                                param.setResult(false);
-                                return;
+                            String lowerPath = path.toLowerCase();
+                            for (String keyword : DETECTION_KEYWORDS) {
+                                if (lowerPath.contains(keyword)) {
+                                    param.setResult(false);
+                                    return;
+                                }
                             }
+                        } finally {
+                            isHooking.set(false);
                         }
                     }
                 });
@@ -162,13 +181,19 @@ public class EmulatorDetectionHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        File[] files = (File[]) param.getResult();
-                        if (files == null) {
-                            return;
-                        }
+                        if (isHooking.get()) return;
+                        isHooking.set(true);
+                        try {
+                            File[] files = (File[]) param.getResult();
+                            if (files == null) {
+                                return;
+                            }
 
-                        List<File> filtered = filterEmulatorFiles(Arrays.asList(files));
-                        param.setResult(filtered.toArray(new File[0]));
+                            List<File> filtered = filterEmulatorFiles(Arrays.asList(files));
+                            param.setResult(filtered.toArray(new File[0]));
+                        } finally {
+                            isHooking.set(false);
+                        }
                     }
                 });
 
@@ -178,13 +203,19 @@ public class EmulatorDetectionHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        File[] files = (File[]) param.getResult();
-                        if (files == null) {
-                            return;
-                        }
+                        if (isHooking.get()) return;
+                        isHooking.set(true);
+                        try {
+                            File[] files = (File[]) param.getResult();
+                            if (files == null) {
+                                return;
+                            }
 
-                        List<File> filtered = filterEmulatorFiles(Arrays.asList(files));
-                        param.setResult(filtered.toArray(new File[0]));
+                            List<File> filtered = filterEmulatorFiles(Arrays.asList(files));
+                            param.setResult(filtered.toArray(new File[0]));
+                        } finally {
+                            isHooking.set(false);
+                        }
                     }
                 });
 
@@ -194,13 +225,19 @@ public class EmulatorDetectionHooks {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        File[] files = (File[]) param.getResult();
-                        if (files == null) {
-                            return;
-                        }
+                        if (isHooking.get()) return;
+                        isHooking.set(true);
+                        try {
+                            File[] files = (File[]) param.getResult();
+                            if (files == null) {
+                                return;
+                            }
 
-                        List<File> filtered = filterEmulatorFiles(Arrays.asList(files));
-                        param.setResult(filtered.toArray(new File[0]));
+                            List<File> filtered = filterEmulatorFiles(Arrays.asList(files));
+                            param.setResult(filtered.toArray(new File[0]));
+                        } finally {
+                            isHooking.set(false);
+                        }
                     }
                 });
         } catch (Exception e) {
