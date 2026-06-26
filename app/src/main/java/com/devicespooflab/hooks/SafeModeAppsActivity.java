@@ -79,6 +79,16 @@ public class SafeModeAppsActivity extends AppCompatActivity {
                 bars.right,
                 bars.bottom);
             binding.appsRecyclerView.setClipToPadding(false);
+            binding.emptyText.setPadding(
+                binding.emptyText.getPaddingLeft(),
+                binding.emptyText.getPaddingTop(),
+                bars.right,
+                bars.bottom);
+            binding.progressIndicator.setPadding(
+                binding.progressIndicator.getPaddingLeft(),
+                binding.progressIndicator.getPaddingTop(),
+                bars.right,
+                bars.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
         setSupportActionBar(binding.topAppBar);
