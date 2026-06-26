@@ -7,9 +7,13 @@ import android.os.Bundle;
 import android.content.pm.PackageInfo;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.devicespooflab.hooks.data.AppSettingsStore;
 import com.devicespooflab.hooks.databinding.ActivityRealInfoBinding;
@@ -25,14 +29,15 @@ public class RealInfoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         AppSettingsStore.applyActivityTheme(this);
         AppSettingsStore.apply(this);
-        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         binding = ActivityRealInfoBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
-            androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            Insets bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+            return WindowInsetsCompat.CONSUMED;
         });
         setSupportActionBar(binding.topAppBar);
         configureTopBarAppearance();
