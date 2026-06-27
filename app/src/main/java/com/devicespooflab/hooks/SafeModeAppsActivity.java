@@ -13,12 +13,16 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -62,14 +66,30 @@ public class SafeModeAppsActivity extends AppCompatActivity {
         AppSettingsStore.applyActivityTheme(this);
         AppSettingsStore.apply(this);
         super.onCreate(savedInstanceState);
-        androidx.activity.EdgeToEdge.enable(this);
+        EdgeToEdge.enable(this);
         binding = ActivitySafeModeAppsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
-            androidx.core.graphics.Insets bars = insets.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.systemBars());
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            Insets bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(bars.left, bars.top, 0, 0);
+            binding.appsRecyclerView.setPadding(
+                binding.appsRecyclerView.getPaddingLeft(),
+                binding.appsRecyclerView.getPaddingTop(),
+                bars.right,
+                bars.bottom);
+            binding.appsRecyclerView.setClipToPadding(false);
+            binding.emptyText.setPadding(
+                binding.emptyText.getPaddingLeft(),
+                binding.emptyText.getPaddingTop(),
+                bars.right,
+                bars.bottom);
+            binding.progressIndicator.setPadding(
+                binding.progressIndicator.getPaddingLeft(),
+                binding.progressIndicator.getPaddingTop(),
+                bars.right,
+                bars.bottom);
+            return WindowInsetsCompat.CONSUMED;
         });
         setSupportActionBar(binding.topAppBar);
         configureTopBarAppearance();

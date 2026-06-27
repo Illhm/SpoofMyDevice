@@ -9,10 +9,14 @@ import android.view.ViewGroup;
 import android.widget.ScrollView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -64,14 +68,14 @@ public class MainActivity extends AppCompatActivity {
         AppSettingsStore.applyActivityTheme(this);
         AppSettingsStore.apply(this);
         super.onCreate(savedInstanceState);
-        androidx.activity.EdgeToEdge.enable(this);
+        EdgeToEdge.enable(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
-            androidx.core.graphics.Insets bars = insets.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.systemBars());
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            Insets bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+            return WindowInsetsCompat.CONSUMED;
         });
         tabletNavigation = isTabletNavigation();
         configureNavigationMode();
