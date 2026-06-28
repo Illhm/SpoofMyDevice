@@ -4,9 +4,11 @@
 
 # Keep Xposed entry point
 -keep class com.devicespooflab.hooks.MainHook { *; }
+-keep class com.devicespooflab.hooks.ZygoteInit { *; }
 
 # Keep all hook classes
 -keep class com.devicespooflab.hooks.hooks.** { *; }
 
 # Keep utility classes
 -keep class com.devicespooflab.hooks.utils.** { *; }
+-keep class com.devicespooflab.hooks.ParamStore { *; }
