@@ -1,62 +1,270 @@
-# Dokumentasi Arsitektur SpoofMyDevice
+## 🎯 Fokus
 
-## Tujuan Kode
-SpoofMyDevice adalah aplikasi pendamping (companion app) berbasis Android sekaligus modul Xposed/LSPosed yang bertujuan untuk melindungi privasi pengguna dan mencegah pelacakan perangkat dengan cara memalsukan (*spoofing*) spesifikasi dan identitas sistem Android secara *real-time*. Tujuan utamanya adalah untuk memastikan aplikasi target yang memindai perangkat memperoleh informasi perangkat keras (hardware) dan perangkat lunak yang konsisten dari profil perangkat nyata (seperti profil Pixel, Galaxy, dll), tanpa perlu menggunakan akses root (kecuali untuk utilitas tambahan seperti membersihkan cache via su), dan tanpa perlu merusak struktur integritas sistem yang asli (beroperasi seutuhnya pada ruang lingkup proses hooking memori). Proyek ini juga disiapkan sebagai *framework* yang fleksibel, mendukung mekanisme keamanan *sandboxing*, *plugin engine*, dan manajemen profil secara menyeluruh.
+Hanya **LSPosed Module (Core Hook Engine)** — module yang membaca 45 parameter dari SharedPreferences lalu meng-intercept semua panggilan sistem Android agar mengembalikan nilai spoofed. Tidak termasuk Companion App, ContentProvider, server lisensi, atau monetisasi.
 
-## Inti Kode
-Sistem ini dibangun atas berbagai lapisan arsitektur yang terbagi dalam komponen-komponen kunci berikut:
+**Bahasa:** Kotlin · **Target:** Android 8.0+ (API 26+) · **Framework:** LSPosed API (Zygisk-based) · **Scope:** `system_server`, `phone` process, target apps
 
-1. **Entry Point & Sistem Hooking (Lapisan Xposed)**
-   - `MainHook`: Kelas *entry point* (implementasi `IXposedHookLoadPackage`) yang menyuntikkan dan menginisialisasi semua layanan *hook* ke dalam aplikasi target.
-   - **Manajemen Modul Hook**: Terdapat puluhan kelas *hook* spesifik yang ditugaskan untuk mencegat fungsi sistem:
-     - `SystemPropertiesHooks`, `BuildHooks`, `GetPropHooks`: Mengubah *system properties* (seperti `ro.build.fingerprint`) dan variabel statis di kelas `Build` menggunakan Java Reflection untuk mencegah pelacakan profil asli.
-     - `HardwareHooks`, `DisplayHooks`: Memanipulasi bacaan spesifikasi fisik (jumlah *core* CPU, kapasitas RAM, dimensi layar, kepadatan piksel).
-     - `EmulatorDetectionHooks`: Lapis pertahanan yang mengamankan aplikasi dari deteksi emulator/Xposed dengan menyembunyikan berkas rahasia seperti `/dev/qemu_pipe`, jalur su (`/sbin/su`, `/data/adb/magisk`), dan memanipulasi *stack traces*.
-     - `TelephonyHooks`, `AdvertisingIdHooks`, `MacAddressHooks`: Menyembunyikan identitas seluler (IMEI, IMSI, ICCID), ID iklan, dan alamat fisik perangkat (MAC, Bluetooth).
-     - `ContextHooks`, `WebViewHooks`, `AppSetIdHooks`, `MediaDrmHooks`: Mengamankan jalur identifikasi unik lainnya pada level aplikasi (mis. agen peramban (*User-Agent*), AppSetId, DRM).
+---
 
-2. **Manajemen Konfigurasi, Sinkronisasi, dan Penyimpanan (Data & Utils)**
-   - `ConfigManager` & `ConfigFileManager`: Kelas krusial yang mengontrol akses ke *state* spoofing. Bertanggung jawab memuat *key-value* dari fail `device_profile.conf` dan menyinkronkan data dari lapisan penyedia konfigurasi ke seluruh lapisan memori dan aplikasi ter-hook.
-   - `ConfigProvider` & `ConfigBridgeReceiver`: Karena modifikasi Xposed bekerja di luar kotak pasir reguler (*process boundaries*), Content Provider ini (diamankan dengan *signature permission*) bertugas menyiarkan nilai *config* ke dalam *environment* Xposed secara *cross-process*.
-   - `DevicePresetCatalog`, `RealDevicePresets`, `SamsungPresets`: Repositori internal yang menampung *dump* lengkap (*blueprints*) dari spesifikasi perangkat asli untuk digunakan sebagai profil, guna lulus dari pengujian korelasi (*fraud-detection*) yang ketat.
-   - `RootAccessManager`: Komponen opsional pada companion app untuk memberikan izin kontrol *root-level* jika perangkat di-*root* (untuk fungsi *tools* semacam manajemen cache aplikasi dan pemaksaan *stop*).
+## 🏗️ Arsitektur Module
 
-3. **Validasi & Integritas Profil (Profile & Diagnostics)**
-   - `ProfileManager`: Pengecek rasionalitas konfigurasi. Jika profil modifikasi dinilai tidak logis (mis. *fingerprint* dan *brand* tidak sesuai, atau versi Android < API 26), proses sistem modifikasi tidak akan disuntikkan demi menghalangi deteksi *red flag*.
-   - `HookDiagnostics`: Sistem telemetri untuk pencatatan jejak (audit) modul Xposed yang gagal/terlewati (*skipped*)/berhasil diterapkan.
-   - `AndroidVersionCompat`: Utilitas komparator batasan *framework* API SDK, memastikan fungsionalitas disesuaikan secara logis dengan versi perangkat dari Android 8 hingga API 36 (Android 16).
+```
+┌──────────────────────┐
+│   SharedPreferences   │  ← 45 parameter ditulis via ContentProvider
+│   (rsh_params)        │
+└──────────┬───────────┘
+           │ read on every hook call
+┌──────────▼───────────┐
+│   MainHook.kt        │  IXposedHookLoadPackage
+│   Entry point         │
+└──────────┬───────────┘
+           │
+    ┌──────┼──────┬─────────┬──────────┬──────────┐
+    ▼      ▼      ▼         ▼          ▼          ▼
+ Build  Tele   Identity   WiFi    Location   Bluetooth
+ Hook    Hook    Hook      Hook      Hook       Hook
+```
 
-4. **Sistem Plugin Keamanan Tinggi (Plugin Engine Layer)**
-   - `TigerPluginEngine` & `SandboxedPluginExecutor`: Sistem mesin plugin prototipe berlapis baja (*Tiger-inspired layer*) yang memberlakukan *strict sandbox constraints*. Mengamankan eksekusi dari jaringan pihak ketiga atau API JNI ilegal dengan membatasi eksekusi menggunakan basis `Future` timeouts; melemparkan `SandboxedExecutionException` apabila terjadi pelanggaran privilese (*sandbox evasion*).
+---
 
-5. **Antarmuka Pengguna & Navigasi (UI Layer)**
-   - `MainActivity`, `RealInfoActivity`, `SafeModeAppsActivity`: *Activity* utama di mana pengaturan modifikasi diberlakukan.
-   - `HomeFragment`, `DeviceSettingsFragment`, `AppSettingsFragment`, `RealInfoFragment`: Komponen berbasis fragmen tempat pengguna dapat mengatur preferensi spesifikasi profil per-aplikasi (`PerAppSettings`), melihat status layanan asli, dan menerapkan konfigurasi modifikasi yang dipilih.
+## 📦 Hook Targets — 45 Parameter
 
-## Alur Logic
-Proses sistem memodifikasi perilaku *runtime* Android mengalir sebagai berikut:
+### ① Build Info (20 param) — Prioritas P0
 
-1. **Pemilihan Profil (Fase UI & Penyimpanan Data)**
-   - Pengguna membuka SpoofMyDevice (via `MainActivity` -> `DeviceSettingsFragment`).
-   - Sistem membaca profil nyata dari `DevicePresetCatalog` dan menampilkannya kepada pengguna.
-   - Setelah profil *Custom* maupun *Preset* disimpan, `ConfigFileManager` menulisnya ke berkas lokal.
-   - Modifikasi preferensi paket aplikasi (*bypass* / *enable*) disimpan dalam `AppSettingsStore`.
-   - Modifikasi memicu *broadcast intent* yang ditangkap oleh `ConfigBridgeReceiver`, menginstruksikan `ConfigProvider` untuk siap sedia menyajikan profil ini kepada klien (Target App).
+| # | Key | Source | Hook Method |
+| --- | --- | --- | --- |
+| 1 | `phone_brand` | `Build.BRAND` | Static field hook |
+| 2 | `phone_model` | `Build.MODEL` | Static field hook |
+| 3 | `phone_manufacturer` | `Build.MANUFACTURER` | Static field hook |
+| 4 | `phone_device` | `Build.DEVICE` | Static field hook |
+| 5 | `phone_board` | `Build.BOARD` | Static field hook |
+| 6 | `phone_hardware` | `Build.HARDWARE` | Static field hook |
+| 7 | `phone_name` | `Build.PRODUCT` | Static field hook |
+| 8 | `phone_display` | `Build.DISPLAY` | Static field hook |
+| 9 | `phone_version_release` | `Build.VERSION.RELEASE` | Static field hook |
+| 10 | `phone_incremental` | `Build.VERSION.INCREMENTAL` | Static field hook |
+| 11 | `phone_id` | `Build.ID` | Static field hook |
+| 12 | `phone_tags` | `Build.TAGS` | Static field hook |
+| 13 | `phone_host` | `Build.HOST` | Static field hook |
+| 14 | `phone_user` | `Build.USER` | Static field hook |
+| 15 | `phone_type` | `Build.TYPE` | Static field hook |
+| 16 | `phone_baseband` | `SystemProperties` | `get()` hook |
+| 17 | `phone_patch` | `SystemProperties` | `get()` hook |
+| 18 | `phone_build_date` | `Build.TIME` | Static field hook |
+| 19 | `phone_build_date_utc` | `Build.TIME` / 1000L | Derived |
+| 20 | `phone_fingerprint` | `Build.FINGERPRINT` | Static field hook |
 
-2. **Injeksi Sistem dan Penyiapan Hook (Fase Zygote / Runtime)**
-   - Ketika paket/aplikasi target dimuat (*launch*), proses Xposed `IXposedHookLoadPackage` terpicu yang menjalankan `MainHook`.
-   - Sistem menarik konfigurasi memori lewat sinkronisasi `ConfigManager`.
-   - Di sini `PerAppSettings` dicek untuk menentukan apakah aplikasi dalam mode diam (di-bypass) atau di-*spoof*.
-   - Jika modul beroperasi, `ProfileManager` menjalankan validasi korelasi. Jika lulus validasi konsistensi, status diteruskan ke tahap aktivasi seluruh kumpulan *hook*.
+**Pendekatan:** Hook seluruh static field `android.os.Build` + `android.os.Build$VERSION` saat class loading. Gunakan `XposedHelpers.setStaticObjectField`.
 
-3. **Pencegatan Level Eksekusi dan Adaptasi (Fase Intercept)**
-   - Modul `*Hooks.java` yang relevan aktif menempel pada metode *native* OS dan Java (menggunakan `XposedHelpers.findAndHookMethod`).
-   - Contoh: Ketika aplikasi klien meminta properti IMEI ke TelephonyManager, fungsi `TelephonyHooks` mencegat balasan (*intercept*) dan memberikan variabel dari profil *Custom* (lewat `ConfigManager.getIMEI()`).
-   - Contoh lain: Jika aplikasi melacak status emulator menggunakan pembacaan berkas (seperti mencari `su` atau membaca ukuran RAM), kelas pembaca sistem (`java.io.File`, `Runtime.exec`) diarahkan agar memberikan nilai murni dari `RealDevicePresets` dan mengaburkan jejak utilitas eksternal (`EmulatorDetectionHooks`).
-   - Fungsi sandboxing pada tingkat eksekusi `SandboxedPluginExecutor` mengekang skrip dinamis agar tetap berjalan dalam batas *timeout* CPU memori dan ruang lingkup terbatas yang diinisialisasi oleh TigerPluginEngine.
+```kotlin
+// BuildHook.kt
+class BuildHook : HookModule {
+    override fun hook(classLoader: ClassLoader, params: Map<String, String>) {
+        XposedHelpers.setStaticObjectField(
+            Build::class.java, "BRAND", params["phone_brand"]
+        )
+        XposedHelpers.setStaticObjectField(
+            Build::class.java, "MODEL", params["phone_model"]
+        )
+        // ... 18 lainnya
+        XposedHelpers.setStaticObjectField(
+            Build::class.java, "FINGERPRINT", params["phone_fingerprint"]
+        )
+    }
+}
+```
 
-4. **Monitoring dan Resiliensi Jangka Panjang**
-   - Agar aplikasi dapat me-*refresh* perubahan data saat dipakai, sebuah penyadap `Activity Lifecycle` dan `Application.attach()` disuntikkan di aplikasi tersebut. Konfigurasi memori dapat diubah (*reload*) seketika tanpa harus melakukan *force reboot* berkat struktur pemantauan Xposed ini.
-   - Seluruh langkah modifikasi yang dieksekusi atau tidak terdukung disuplai ke log komprehensif menggunakan `HookDiagnostics`.
+**Catatan:** Android 14+ mungkin perlu reflection tambahan karena enforced API restrictions. Gunakan `XposedBridge` untuk bypass non-SDK interface restrictions.
 
-Dengan arsitektur yang sangat kompartemen seperti ini, sistem memastikan penyamaran perangkat bekerja sangat transparan (*stealth*) tanpa membahayakan konsistensi fungsi inti dalam sistem operasi asli pengguna.
+---
+
+### ② Telephony (8 param) — Prioritas P0
+
+| # | Key | API yang di-hook |
+| --- | --- | --- |
+| 21 | `sim_operator` | `TelephonyManager.getSimOperator()` |
+| 22 | `sim_operator_name` | `TelephonyManager.getSimOperatorName()` |
+| 23 | `sim_country_iso` | `TelephonyManager.getSimCountryIso()` |
+| 24 | `sim_serial_number` | `TelephonyManager.getSimSerialNumber()` |
+| 25 | `line_number` | `TelephonyManager.getLine1Number()` |
+| 26 | `subscriber_id` | `TelephonyManager.getSubscriberId()` |
+| 37 | `imei_1` | `TelephonyManager.getImei(0)` / `getDeviceId(0)` |
+| 38 | `imei_2` | `TelephonyManager.getImei(1)` / `getDeviceId(1)` |
+
+**Perhatian khusus:**
+
+- **Dual-SIM:** Bedakan hook per `slotIndex`. `getImei(0)` ≠ `getImei(1)`.
+- **Android 14+ MIUI/ColorOS:** `getImei()` bisa return empty string — hook `getDeviceId()` sebagai fallback.
+- **`getSubscriberId()`** → IMSI: linked ke `sim_operator` MCC/MNC + Luhn check digit.
+
+```kotlin
+class TelephonyHook : HookModule {
+    override fun hook(classLoader: ClassLoader, params: Map<String, String>) {
+        XposedHelpers.findAndHookMethod(
+            TelephonyManager::class.java,
+            "getDeviceId", Int::class.javaPrimitiveType,
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val slot = param.args[0] as Int
+                    param.result = if (slot == 0) params["imei_1"] else params["imei_2"]
+                }
+            }
+        )
+        // hook getImei(), getSimOperator(), dll.
+    }
+}
+```
+
+---
+
+### ③ Identity (5 param) — Prioritas P0
+
+| # | Key | API yang di-hook |
+| --- | --- | --- |
+| 39 | `android_id` | `Settings.Secure.getString(contentResolver, "android_id")` |
+| 40 | `phone_serial` | `Build.getSerial()` |
+| 41 | `gsf` | `GoogleSettingsContract.Partner.getString()` |
+| 43 | `ads_id` | `AdvertisingIdClient.getAdvertisingIdInfo()` |
+
+**Perhatian:**
+
+- `ANDROID_ID` perlu hook **write + read** — persist after reboot.
+- `Build.getSerial()`: Android 10+ perlu hook via system_server.
+- GSF ID: hook di `com.google.android.gsf` package.
+
+---
+
+### ④ WiFi (4 param) — Prioritas P1
+
+| # | Key | API yang di-hook |
+| --- | --- | --- |
+| 27 | `ssid` | `WifiInfo.getSSID()` |
+| 28 | `bssid` | `WifiInfo.getBSSID()` |
+| 29 | `wifi_mac` | `WifiInfo.getMacAddress()` |
+| 30 | `wifi_state` | `WifiManager.getWifiState()` |
+
+**Catatan:** Android 10+ `getMacAddress()` return `02:00:00:00:00:00` — override dengan MAC valid (OUI matched to brand).
+
+---
+
+### ⑤ Location (6 param) — Prioritas P1
+
+| # | Key | API yang di-hook |
+| --- | --- | --- |
+| 31 | `geo_latitude` | `Location.getLatitude()` |
+| 32 | `geo_longitude` | `Location.getLongitude()` |
+| 33 | `geo_altitude` | `Location.getAltitude()` |
+| 34 | `geo_accuracy` | `Location.getAccuracy()` |
+| 35 | `geo_speed` | `Location.getSpeed()` |
+| 36 | `geo_bearing` | `Location.getBearing()` |
+
+**Pendekatan:** Hook `LocationManager.getLastKnownLocation()` + `requestLocationUpdates()` → return mock Location.
+
+---
+
+### ⑥ Bluetooth (1 param) — Prioritas P2
+
+| # | Key | API yang di-hook |
+| --- | --- | --- |
+| 42 | `bluetooth_mac` | `BluetoothAdapter.getAddress()` |
+
+### ⑦ DRM & WebView (2 param) — Prioritas P2
+
+| # | Key | API yang di-hook |
+| --- | --- | --- |
+| 44 | `drm` | `MediaDrm.getPropertyString()` |
+| 45 | `webview_visible` | `WebView.setVisibility()` reflection |
+
+---
+
+## 🧵 Module Lifecycle
+
+```
+Zygote fork
+  │
+  ▼
+IXposedHookZygoteInit.initZygote()
+  │  Register module hooks, load resource hooks
+  │
+  ▼
+IXposedHookLoadPackage.handleLoadPackage()
+  │  Cek package name → system_server / phone / target app?
+  │
+  ▼
+ParamStore.load() → baca SharedPreferences
+  │
+  ▼
+Setiap HookModule.apply(params)
+  │
+  ▼
+✅ Module siap — semua system call ter-intercept
+```
+
+**Scope per process:**
+
+- `system_server` — Build, ANDROID_ID, getSerial
+- `com.android.phone` — Telephony
+- Target apps — WiFi, Location, Bluetooth, DRM, WebView, Ad ID
+
+---
+
+## 🔌 Interface: HookModule
+
+```kotlin
+interface HookModule {
+    /** Apply hooks with spoof parameters. Returns true if successful. */
+    fun hook(classLoader: ClassLoader, params: Map<String, String>): Boolean
+
+    /** Lower = applied first. Default 50. */
+    val priority: Int get() = 50
+
+    /** Packages where this hook should be active. */
+    val targetPackages: List<String>
+}
+```
+
+Semua hook class mengimplementasikan interface ini — `MainHook.kt` meng-iterate semua implementasi saat `handleLoadPackage()`.
+
+---
+
+## 📁 Struktur Module
+
+```
+module/
+├── build.gradle.kts
+├── proguard-rules.pro
+└── src/main/
+    ├── AndroidManifest.xml              # Zygisk init
+    └── kotlin/
+        ├── MainHook.kt                  # IXposedHookLoadPackage
+        ├── ZygoteInit.kt                # IXposedHookZygoteInit
+        ├── hooks/
+        │   ├── HookModule.kt            # interface
+        │   ├── BuildHook.kt             # 20 param
+        │   ├── TelephonyHook.kt         # 8 param
+        │   ├── IdentityHook.kt          # 5 param
+        │   ├── WifiHook.kt              # 4 param
+        │   ├── LocationHook.kt          # 6 param
+        │   ├── BluetoothHook.kt         # 1 param
+        │   └── DrmWebViewHook.kt        # 2 param
+        ├── ParamStore.kt                # SharedPreferences reader
+        └── utils/
+            ├── ReflectionHelper.kt      # Bypass helpers
+            └── PackageFilter.kt         # Scope matcher
+```
+
+---
+
+## 📐 Konsistensi Parameter (Module Side)
+
+Module tidak generate parameter (itu job App companion), tapi module bertanggung jawab:
+
+| Aturan | Implementasi |
+| --- | --- |
+| `phone_build_date_utc` ↔ `phone_build_date` | Module baca dari ParamStore tanpa offset |
+| `imei_1` ≠ `imei_2` | Module return beda per slot index |
+| WiFi MAC OUI → phone_brand | Sudah digenerate App companion, module hanya intercept |
+| `geo_lat/long` → `sim_country_iso` | Sudah konsisten dari App companion |
+| Param tidak hilang after reboot | ParamStore persist via SharedPreferences |
+
+---
