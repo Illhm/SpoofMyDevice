@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "DeviceSpoofLabs-Hooks"
-include(":app")
+include(":module")
