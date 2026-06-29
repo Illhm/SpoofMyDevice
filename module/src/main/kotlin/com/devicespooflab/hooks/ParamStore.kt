@@ -27,6 +27,7 @@ object ParamStore {
 
             if (params.isEmpty()) {
                 XposedBridge.log("SpoofMyDevice: ParamStore is empty! Have you pressed 'Random All' in the app?")
+                return emptyMap()
             } else {
                 XposedBridge.log("SpoofMyDevice: Loaded ${params.size} parameters from SharedPreferences.")
             }

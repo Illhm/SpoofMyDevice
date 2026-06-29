@@ -25,7 +25,8 @@ class MainActivity : AppCompatActivity() {
         val prefs = try {
             getSharedPreferences("rsh_params", Context.MODE_WORLD_READABLE)
         } catch (e: SecurityException) {
-            getSharedPreferences("rsh_params", Context.MODE_PRIVATE)
+            Toast.makeText(this, "Failed to save parameters: world-readable storage unavailable.", Toast.LENGTH_SHORT).show()
+            return
         }
 
         val editor = prefs.edit()

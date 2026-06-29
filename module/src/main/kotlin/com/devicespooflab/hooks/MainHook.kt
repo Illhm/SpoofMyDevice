@@ -25,6 +25,7 @@ class MainHook : IXposedHookLoadPackage {
 
         val params = ParamStore.load()
         if (params.isEmpty()) {
+            XposedBridge.log("SpoofMyDevice: No parameters loaded for ${lpparam.packageName}, skipping hooks.")
             return
         }
 

@@ -58,8 +58,12 @@ class DrmWebViewHook : HookModule {
                         override fun beforeHookedMethod(param: MethodHookParam) {
                             // Can be used to block invisible webviews used for tracking
                             if (visibility == "1") {
-                                // Enforce visible
-                                param.args[0] = android.view.View.VISIBLE
+                                val requestedVisibility = param.args[0] as Int
+                                // Only intercept attempts to hide the WebView (INVISIBLE or GONE);
+                                // do not override VISIBLE to avoid breaking normal app layouts.
+                                if (requestedVisibility != android.view.View.VISIBLE) {
+                                    param.result = null
+                                }
                             }
                         }
                     }
